@@ -1,0 +1,279 @@
+---
+title: "useAsync: A cleaner way to fetch data from APIs"
+summary: "Building a custom hook that makes fetching data from APIs cleaner"
+date: "May 10 2022"
+draft: false
+tags:
+- Tutorial
+- ReactJS
+---
+
+# Introduction
+
+Recently I was working on a project during my internship. I was given a fairly easy task, to build a new page where I had to fetch data from APIs and display it with some CTAs. There I came across a very interesting hook that was used across the project to carry out similar tasks.
+
+### useAsync
+
+Some of you must have heard it before. I was fascinated by the fact that how clean and elegant it had become to handle declarative promise resolution and data fetching. I decided to build a custom hook of my own and re-invent the wheel to understand it better.
+
+# Problem
+
+If your React application involves fetching data from APIs then it has to have 3 UI states:
+
+1. Load
+    
+2. Error
+    
+3. Success
+    
+
+The practice that is followed ( especially by beginners ) is to litter the components with a bunch of `useState` calls to keep track of the state of an async function ( that deals with API calls ).
+
+Wouldn’t it be great if we had a utility that would take an async function as an input and return `loading`, `error`, `success`, and `response` values needed to update our UI accordingly thus reducing the lines of code and making it cleaner?
+
+Let's address the problem with an example
+
+<iframe src="https://codesandbox.io/embed/data-fetching-without-async-8mzorp?fontsize=14&hidenavigation=1&theme=dark" style="width:100%;height:500px;border:0;border-radius:4px;overflow:hidden" sandbox="allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts"></iframe>
+
+A simple React application that fetches random quotes on button click. Along with it, we have a dropdown that lets the user select the max length of characters of which the quote must be generated.
+
+Here are 3 different cases when the fetch API is executed:
+
+1. Fetch on mount - When the app loads for the first time.
+    
+2. Fetch on button click - To generate a new random quote on button click.
+    
+3. Fetch on params change - When the user selects an option from the dropdown.
+    
+
+I hope most of the code is self-explanatory, as you can see we have littered the component with too many `useState` calls which are of course necessary for the conditional rendering of the UI. What if you have more such individual components which make an API call you will have to have again all 3 state variables to handle various states of an API call. This approach would increase a lot of code if we had to scale the application or rather any application which deals with data-fetching from APIs.
+
+# Solution
+
+A custom hook that takes an async function as an input and returns the value, error, and loading status values we need to properly update our UI.
+
+### What Are Custom Hooks?
+
+> Custom Hooks are functions. Usually, they start with the word “use” (important convention).
+> 
+> Unlike a React component, a custom Hook doesn’t need to have a specific signature. We can decide what it takes as arguments, and what, if anything, it should return. In other words, it’s just like a normal function
+> 
+> Custom Hooks allow us to access the React ecosystem in terms of hooks, which means we have access to all the known hooks like useState, useMemo, useEffect, etc. This mechanism enables the separation of logic and view.
+
+<iframe src="https://codesandbox.io/embed/data-fetching-with-async-35h6x4?fontsize=14&hidenavigation=1&theme=dark" style="width:100%;height:500px;border:0;border-radius:4px;overflow:hidden" sandbox="allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts"></iframe>
+
+Can you see how clean our App.js file looks now!
+
+All we had to do is pass the async function and parameters as per our needs to a custom hook that returns us the required variables to satisfy our UI needs.
+
+We will discuss in detail the parameters and why we need them later, but to briefly explain we are passing 3 parameters:
+
+1. Async function - Function that makes an API call.
+    
+2. Dependency array - To make an API call on params change.
+    
+3. Boolean flag - If true then execute on mount if not then don't.
+    
+
+# Approach
+
+Let's break down the problem into smaller problems and approach our solution step by step and build our custom hook `hook.js`:
+
+### 1\. Fetch on mount
+
+```plaintext
+
+import { useCallback, useEffect, useState } from "react";
+
+export const useAsync = (asyncFunction, args) => {
+
+  const [response, setResponse] = useState(null);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const execute = useCallback(
+    () => {
+      setLoading(true);
+      setResponse(null);
+      setError(null);
+      return asyncFunction(...args)
+        .then((response) => {
+          setResponse(response);
+        })
+        .catch((error) => {
+          setError(error);
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    },
+    [asyncFunction, ...args]
+  );
+
+  useEffect(() => {
+      execute();
+  }, []);
+
+
+  return { response, error, loading };
+};
+```
+
+* As mentioned above in "what are custom hooks?" we have named our hook starting with "use" followed by "Async" since we are primarily handling an async operation.
+    
+* We are accepting 2 arguments in our custom hook
+    
+    1. `asyncFunction` - function that returns a promise
+        
+    2. `args` - arguments that the asyncFunction accepts
+        
+* We have taken all the state variables that are associated with this async operation to make an API call out in our custom hook.
+    
+* We have also created a new function that wraps the async function passed into `useCallback` to memorize the version this of callback and call the `execute` function in `useEffect` since we want to fetch on mount.
+    
+
+> Note: You can read more about useCallback and why it is needed [here](https://varunkhalate.hashnode.dev/memoization-in-react)
+
+* Finally, we return 3 variables required to handle the 3 UI states thus satisfying our first requirement which is to fetch on mount.
+    
+
+### 2\. Fetch on button click
+
+```plaintext
+
+
+import { useCallback, useEffect, useState } from "react";
+
+export const useAsync = (asyncFunction, args=[], immediate = true) => {
+
+  const [response, setResponse] = useState(null);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const execute = useCallback(
+    () => {
+      setLoading(true);
+      setResponse(null);
+      setError(null);
+      return asyncFunction(...args)
+        .then((response) => {
+          setResponse(response);
+        })
+        .catch((error) => {
+          setError(error);
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    },
+  [asyncFunction, ...args]
+  );
+
+  useEffect(() => {
+    if (immediate) {
+      execute();
+  }, []);
+
+
+  return { execute, response, error, loading };
+};
+```
+
+Since we need explicit control on our async call and also just want the async call to be executed on any event triggered instead of fetching on mount all the time, we have made slight changes in the code.
+
+1. Add one more parameter that our custom hook will accept - "immediate" which will be used in the `useEffect` to decide whether to call the `execute` function on mount or not.
+    
+
+* If `immediate` is `true` then the `execute` function will be called which is similar to our previous solution.
+    
+* If `immediate` is `false` then the `execute` function won't be called.
+    
+
+> NOTE: The default value of `immediate` is true
+
+2. Return `execute` function which can be now called from the component which uses this hook thus giving the ability to manually fetch on any event triggered.
+    
+
+### 3\. Fetch on params change
+
+```plaintext
+
+import { useCallback, useEffect, useRef, useState } from "react";
+
+export const useAsync = (
+  asyncFuntion,
+  args = [],
+  deps = [],
+  immediate = true
+) => {
+  const isFirstUpdate = useRef(true);
+
+  const [response, setResponse] = useState(null);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const execute = useCallback(() => {
+    setLoading(true);
+    setResponse(null);
+    setError(null);
+    return asyncFuntion(...args)
+      .then((response) => {
+        setResponse(response);
+      })
+      .catch((error) => {
+        setError(error);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [asyncFuntion, args]);
+
+  useEffect(() => {
+    if (immediate) {
+      execute();
+    } else {
+      if (!isFirstUpdate.current) {
+        execute();
+      }
+    }
+  }, [...deps]);
+
+  useEffect(() => {
+    isFirstUpdate.current = false;
+  }, []);
+
+  return { execute, response, error, loading };
+};
+```
+
+As you can see the custom hook now accepts a third parameter - `deps` which is an array of parameters that on change shall call the `execute` function. Here we have 2 cases:
+
+1. If `immediate` is `true`, then execute on mount and also when the params or `deps` change.
+    
+    * All we have to do to handle this case is pass the `deps` in the `useEffect`.
+        
+2. If `immediate` is `false`, then don't execute on mount but execute when `deps` change.
+    
+    * To handle this case we need to know once the component using this hook is mounted. To know this we introduced a `useRef` hook. We initialize this useRef hook `isFirstUpdate` with `true` and we have added another `useEffect` call which later on updates the values to `false` after first render or mount.
+        
+    
+    > useRef returns a mutable ref object whose .current property is initialized to the passed argument (initialValue). The returned object will persist for the full lifetime of the component.
+    
+    * Now when the component renders for the first time, in the first `useEffect` none of the conditions are satisfied thus avoiding `execute` to be called on mount. In the first render we are also updating the value of the `useRef` hook to `false` at the end which will make sure that in the next render the `execute` function will be called since now the value of `useRef` is `false` thus satisfying the `if(!isFirstUpdate.current)` condition.
+        
+
+# Conclusion
+
+We just built a custom hook from scratch which does exactly what we need. There are existing solutions and libraries which provide more functionalities and handle other cases like handle mutations, handle race conditions, handle cancellation, etc. Overall it was a great learning experience and a good challenge to solve. Hope you learned a thing or two while reading it too.
+
+That's it for the post, see you in the next one :)
+
+# References
+
+* [useAsync React Hook - useHooks](https://usehooks.com/useAsync/)
+    
+* [React useAsync hook - 30 seconds of code](https://www.30secondsofcode.org/react/s/use-async)
+    
+* [The Power and Convenience of useAsync | by Jennifer Fu](https://betterprogramming.pub/the-power-and-convenience-of-useasync-e4a3e4934143)
+    
+* [Fetching Asynchronous Data with React Hooks](https://polvara.me/posts/fetching-asynchronous-data-with-react-hooks)

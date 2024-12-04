@@ -1,0 +1,205 @@
+---
+title: "Memoization in React"
+summary: "Learn about memoization and how do we use React.memo(), useMemo() and useCallback() to implement the memoization technique in React"
+date: "Sep 23 2021"
+draft: false
+tags:
+- Tutorial
+- ReactJS
+---
+
+In this post we will learn about memoization and how do we use React.memo(), useMemo() and useCallback() to implement the memoization technique in React.
+
+Before we start, l have broken down this post into 4 main questions and those are:
+
+1. **WHAT** is memoization?
+    
+2. **WHY** do we need memorization?
+    
+3. **WHEN** do we need memoization?
+    
+4. **HOW** do we use memoization?
+    
+
+Let's begin 🚀
+
+# 1\. What is memoization?
+
+Before we dive into the specifics of React and using the memoization technique in the same, it's better that we understand what the term means in general.
+
+> Memoization is an optimization technique that speeds up applications by storing the results of expensive function calls and returning the cached result when the same inputs are supplied again.
+
+* Expensive function call is a function call that consumes huge chunks of time and memory during execution due to heavy computation.
+    
+
+Let's understand it better with a practical example.
+
+*Assume you're reading a novel with a stylish, and appealing cover. A stranger walks by and asks about the title and author of the book. You're likely to flip through the book, read the title and author's name, and respond to that stranger. The book is appealing, and more people will want to know about it. You will not look at the book's author and title again if another person goes by and asks you about it. You probably remember the book details at this point. If a third person asks you about the book, you will recall the information from your memory.*
+
+Similarly, memoization executes a function once, saves the result in memory (cache), and if we try to execute that function again with the same arguments as before, it just returns that previously saved result without executing the function again.
+
+Now that we are clear about memoization in general, let's dive into the specifics.
+
+## 2\. Why do we need memoization?
+
+In order to know why do we need memoization in React, we need to know what problem we are facing which requires us to understand how React works.
+
+*The key design decision that makes React awesome is re-render the whole app on every update.*
+
+**Rendering** - It's the process of React asking your components to describe what they want their section of the UI to look like, now, based on the current combination of props and state.
+
+So, whenever data changes, react will render the entire component again (i.e. re-render ) which also implies that the child components will also be re-rendered. Rendering on every change seems expensive, right? But React uses the concept of [Virtual Dom](https://reactkungfu.com/2015/10/the-difference-between-virtual-dom-and-dom/) which makes re-rendering faster.
+
+Rebuilding the DOM on each update is not at all affordable instead, on every update - React builds a new virtual DOM subtree -&gt; [Diff](https://reactjs.org/docs/reconciliation.html) it with the old one -&gt; computes the minimal set of DOM mutations and puts them in a queue and batch executes all updates.
+
+A key part of this to understand is that "rendering" is not the same thing as "updating the DOM", and a component may be rendered without any visible changes happening as a result. When React renders a component: The component might return the same render output as last time, so no changes are needed.
+
+**Remember, rendering is not a bad thing - it's how React knows whether it needs to actually make any changes to the DOM!**
+
+## 3\. When do we need memoization
+
+Now, that we know that the default behavior of React is to \*\* re-render on update\*\*, we come across 3 cases that cause a significant downfall in performance.
+
+* Unnecessary re-renders of child components.
+    
+* Creation of new instances of callback functions on every re-render.
+    
+* Computationally heavy functions repeatedly executing due to re-rendering of the component.
+    
+
+# 4\. How do we use memoization?
+
+React has three APIs for memoization: `memo`, `useMemo`, and `useCallback`.
+
+Let see how do we use them by considering each case we just mentioned with an example.
+
+Here's the example which has a parent component ( `<App/>` ) and a child component ( `<Child/>` ).
+
+The parent component has 2 states
+
+* count - Changes when you click on the `Add Count` button.
+    
+* input - Changes whenever you type something in the input field.
+    
+
+The child component is a simple `h1` tag with a text.
+
+Let's follow a drill in all the three cases which we will be covering so that it will be easy to understand what's going on in the code. The drill is to interact with the buttons and input field while simultaneously keeping a watch on the console logs.
+
+Here we go.
+
+%[https://codesandbox.io/embed/example1-c31yx?autoresize=1&expanddevtools=1&fontsize=14&hidenavigation=1&theme=dark] 
+
+## 1\. Unnecessary re-renders of child components.
+
+If you have followed the drill and observed carefully in the console, the child component ( `<Child/>` ) is re-rendered every time you click the button or write something in the input field which is of course the default behavior of React.
+
+**Ideal behavior expected is that the child component should not be re-rendered unnecessarily even though its props or state is not changed. This ideal behavior is achieved by using memo().**
+
+### memo()
+
+`memo()` is a higher-order component that renders the component only if the props or the states of that components are changed regardless of the props altered of the parent component.
+
+All we have to do is wrap the child component ( `<Child/>` ) inside memo() while exporting it.
+
+```plaintext
+export default memo(Child);
+```
+
+%\[https://codesandbox.io/embed/exampl1withmemoization-3if5h?autoresize=1&expanddevtools=1&fontsize=14&hidenavigation=1&theme=dark\]
+
+Let's follow the same drill. You will observe that the child is rendered only for the first time. Click on the button or type any text you will see that only the parent is re-rendered since only the state of parent changes thus memoizing the child component.
+
+## 2\. Creation of new instances of callback functions on every re-render.
+
+Let's add some more code to the same example.
+
+1. A button in the child component to increase the `count`.
+    
+2. A callback function in the parent component to increment the \`\`\`count\`\`, which is passed to the child component.
+    
+
+%[https://codesandbox.io/embed/example2-ducyc?autoresize=1&expanddevtools=1&fontsize=14&hidenavigation=1&theme=dark] 
+
+Let's follow the same drill. Irrespective of the fact that we have wrapped the Child component in **memo()** the child component is still getting re-rendered either on clicking the `Add Count` button or typing in the input text field.
+
+The reason is memo() does a shallow comparison of props and objects of the props.
+
+**Shallow comparison** is when the properties of the objects being compared is done using "===" or strict equality and will not conduct comparisons deeper into the properties. So if you shallow compare a deeply nested object it will just check the reference not the values inside that object.
+
+A function in JavaScript is only equal to its instance. The AddCountFromChild() will have a different instance on each render, then `memo()` will re-render every time the function instance changes even if it is basically the same function.
+
+The ideal behavior expected here is that the callback function shall not be re-rendered even though the input text changes, although it can be re-rendered when the `count` changes since it depends on it. Stopping the re-rendering of the callback function will avoid the Child component unnecessarily re-render too. This can be achieved by using `useCallback`
+
+### useCallback()
+
+It's a hook that returns a memoized version of the callback that only changes if one of the dependencies has changed.
+
+Let's pass an inline callback and add count in the array of dependencies since the addCountFromChild function depends on the `count` variable.
+
+```plaintext
+ const addCountFromChild = useCallback(() => {
+    setCount(count + 1);
+  }, [count]);
+```
+
+%\[https://codesandbox.io/embed/example2withmemoization-4bsed?autoresize=1&expanddevtools=1&fontsize=14&hidenavigation=1&theme=dark\]
+
+Now, by following the drill we can observe is that change in the input text field does not trigger re-rendering of the child component. However, the child component is rendered only by clicking either on the `Add Count` button or the `Add Count From Child` button of the child component since the callback function renders every time the `count` variable changes its value. Hence, we have memoized a callback function avoiding it to re-create instances unnecessarily.
+
+## 3\. Computationally heavy functions repeatedly executing due to the re-rendering of the component.
+
+Let's add some more code.
+
+* A simple for loop that does heavy computation in the child component.
+    
+
+%[https://codesandbox.io/embed/example3-zvpdm?fontsize=14&hidenavigation=1&theme=dark] 
+
+If you observe here, it takes quite a bit of time to update the `count` whenever you click either of the buttons to increment the `count`. And the reason is the for loop is executed every time the child component is re-rendered thus causing a lot of time for React to change the DOM eventually causing a delay in updating the `count`.
+
+The ideal behavior is that the result of the for loop gets saved once and can be used whenever required since the result will be the same every time. This will cause faster re-renders and avoid repeated heavy computations. This can be achieved using `useMemo()`
+
+### useMemo()
+
+It is a hook that allows you to memoize expensive functions so that you can avoid calling them on every render as long as the dependencies don't change.
+
+Let wrap the for loop inside useMemo by passing an empty array of dependencies since the result doesn't depend on any variable.
+
+```plaintext
+ const computedValue = useMemo(() => {
+    let result = 0;
+    for (let i = 0; i < 500_000_000; i++) {
+      result++;
+    }
+    return result;
+  }, []);
+```
+
+%[https://codesandbox.io/embed/example3withmemoization-b5zyb?autoresize=1&expanddevtools=1&fontsize=14&hidenavigation=1&theme=dark] 
+
+A significant performance improvement is seen in updating the count on either of the button clicks. This has successfully helped us to memoiz the heavy computation and return the stored answer on every re-render.
+
+# Memoization every time?
+
+We have seen what is memoization and the power of memoization with an example of how it can speed up our React apps. Memoization may seem to be useful but it also comes with a trade-off. It occupies the memory space for storing the memoized values. It may not be useful with low memory functions but delivers great benefits with high memory functions.
+
+# Conclusion
+
+I hope the 4 main questions we discussed at the very beginning of the post were answered clearly and that the answers were simple enough to understand. That's it for this post folks. See you in the next one :)
+
+### References
+
+Followings are the resources I referred to understand memorization in react. I would recommend you to go through these as well to have a better understanding of the good and bad cases of using the memoization technique in react.
+
+* [Introduction to Memorization in JavaScript](https://www.section.io/engineering-education/an-introduction-to-memoization-in-javascript/)
+    
+* [A (Mostly) Complete Guide to React Rendering Behavior](https://blog.isquaredsoftware.com/2020/05/blogged-answers-a-mostly-complete-guide-to-react-rendering-behavior/#what-is-rendering)
+    
+* [Optimize your React App Performance with Memoization](https://www.qed42.com/blog/optimize-react-app-performance-memoization)
+    
+* [Memoization and React](https://epicreact.dev/memoization-and-react/)
+    
+* [Your Guide to React.useCallback()](https://dmitripavlutin.com/dont-overuse-react-usecallback/)
+    
+* [How to Memoize with React.useMemo()](https://dmitripavlutin.com/react-usememo-hook/)
