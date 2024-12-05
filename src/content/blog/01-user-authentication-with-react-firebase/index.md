@@ -6,7 +6,7 @@ draft: false
 tags:
 - Tutorial
 - Firebase
-- ReactJS
+- Reactjs
 ---
 
 This is an attempt to give you a step by step tutorial to handle user authentication in ReactJS using Firebase.

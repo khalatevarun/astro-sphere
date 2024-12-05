@@ -5,7 +5,8 @@ date: "Sep 23 2021"
 draft: false
 tags:
 - Tutorial
-- ReactJS
+- Reactjs
+- Hooks
 ---
 
 In this post we will learn about memoization and how do we use React.memo(), useMemo() and useCallback() to implement the memoization technique in React.
