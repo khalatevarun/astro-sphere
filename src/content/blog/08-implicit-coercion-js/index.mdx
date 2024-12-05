@@ -1,0 +1,250 @@
+---
+title: "Implicit Coercion in Javascript"
+summary: "Demystifying implicit coercion in javascript with examples."
+date: "Oct 16 2021"
+draft: false
+tags:
+- JavaScript
+---
+
+# Introduction
+
+While JavaScript is known as one of the easiest programming languages for beginners, it can also become frustrating when developers expect JavaScript to do one thing and it returns another. If you do not understand coercion well enough, it will leave you baffled. To avoid such a situation, it's essential to understand how coercion works and the rules that javascript follows to convert one type of value into another.
+
+Javascript's implicit coercion simply refers to Javascript attempting to coerce an unexpected value type to the expected type. So you can pass a string where it expects a number, an object where it expects a string etc, and it will try to convert it to the right type. This is a Javascript feature that is best avoided.
+
+![0130a1cfb1309b86c55207f8ac2b7570.jpg](https://cdn.hashnode.com/res/hashnode/image/upload/v1634409284338/Ayhc8HysJ.jpeg align="left")
+
+Knowingly or unknowingly, you have been dealing a lot with Type Coercion if you frequently code in JavaScript and you might as well came across a situation like this due to unexpected results generated.
+
+I would suggest you going through this [hilarious talk](https://www.destroyallsoftware.com/talks/wat) before you proceed, just to make it more interesting and fun at the same time.
+
+Without further ado, let’s try to break down implicit coercion into a set of rules that we can both remember.
+
+# Types in JavaScript
+
+We can refer to JavaScript as an untyped language, which means that it has no static types. However, the prominent myth that JavaScript doesn’t have types is false.
+
+[JavaScript has seven primitive types:](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures)
+
+* string
+    
+* number
+    
+* Boolean
+    
+* undefined
+    
+* null
+    
+* Symbol
+    
+* BigInt Variables in JavaScript don’t have types, however. Whenever we use the typeof operator to return a variable type, we return the variable’s value type.
+    
+
+There are only three types that can result from coercion in JavaScript — string, boolean and number. Coercion behavior is different for primitives and objects. Without further ado, let’s try to break down implicit coercion into a set of rules that we can both remember.
+
+**NOTE: In this post we will be covering on the primitive coercion.**
+
+# Primitive Coercion
+
+JavaScript primitives include boolean, string, number, null, and undefined.
+
+## Primitive to boolean
+
+Primitives are **coerced to boolean when using logical operators**.
+
+```plaintext
+// number and string
+123 && "hello"
+-> true && true
+-> "hello"
+
+// string and string
+"true" || "false"
+-> true || true
+-> "true"
+
+// boolean or number
+true && "23"
+-> true && true
+-> "23"
+
+// number and number
+0 && 23
+-> false && true
+-> 0
+
+// null and boolean
+null || true
+-> false || true
+-> true
+
+// null and string
+null || "hello"
+-> false || true
+-> "hello"
+
+// null and undefined
+null || undefined
+-> false || false
+-> undefined
+```
+
+## Primitive to string
+
+Primitives are coerced to string when using the binary + operator — if any operand is a string.
+
+```plaintext
+// number + string
+123 + "hello"; // "123hello"
+
+// string + boolean
+"123" + true; // "123true"
+
+// string + boolean + number
+123 + "hello" + false; // "123hellofalse"
+
+// string + undefined
+"123" + undefined; // "123undefined"
+
+// string + null
+"123" + null; // "123null"
+```
+
+## Primitive to number
+
+Primitives are coerced to number when using
+
+### 1\. Comparison operators
+
+```plaintext
+// numeric string with number
+"5" >= 1
+-> 5 >= 1
+-> true
+
+// text string with number
+"true" > 1
+-> NaN > 1
+-> false // text becomes NaN
+
+// boolean with number
+false < 1
+// 0 < 1
+// true // false becomes 0
+
+// boolean with numeric string
+true > "1"
+// 1 > 1
+// false // true becomes 1
+
+// null with number
+null < 10
+// 0 < 10
+// true // null becomes 0
+
+// undefined with number
+undefined < 1
+// NaN < 1
+// false // undefined becomes NaN
+```
+
+### 2\. Arithmetic operators (except for + when one operand is a string)\*\*
+
+```plaintext
+// numeric string with number
+"5" - 1
+-> 5 - 1
+-> 4
+
+// numeric string with number
+"10" / 2
+-> 10 / 2
+-> 5
+
+// boolean with number
+true * "5" 
+-> 1 * 5
+-> 5
+
+// null with number
+null + 1
+-> 0 + 1
+-> 1
+
+// undefined with number
+undefined - 1
+-> NaN - 1
+-> NaN
+```
+
+### 3\. Unary + operator
+
+```plaintext
+// number
++2
+-> 2
+
+// string
++"123"
+-> 123
+
+// boolean
++true
+-> 1
+
+// null
++null
+-> 0
+
+// undefined
++undefined
+-> NaN
+```
+
+### 4\. Loose equality operators (except for when both arguments are already the same primitive)
+
+```plaintext
+// number and string
+123 == '123'
+-> 123 == 123
+-> true
+
+// boolean and string
+false == "0"
+-> 0 == 0
+-> true
+
+// boolean and number
+true == 1
+-> 1 == 1
+-> true
+
+// null and number
+null == 0
+-> false // special case - null can only be coerced to null and undefined via loose equality
+
+// null and undefined
+null == undefined // true
+
+// NaN and NaN
+NaN == NaN
+-> false // special case - NaN isn't equal to anything!
+```
+
+# Conclusion
+
+We’ve broken down how JavaScript implicitly coerces primitives to boolean, string and number into different categories and came up with rules for common cases in each category.
+
+You can find more examples on [this site](wtfjs.com.) which may also help you understand coercion better.
+
+Thats it for the post, see you in the next one :)
+
+### References
+
+* [Type coercion in JavaScript](https://blog.logrocket.com/type-coercion-in-javascript/)
+    
+* [JavaScript type coercion explained](https://www.freecodecamp.org/news/js-type-coercion-explained-27ba3d9a2839/)
+    
+* [Detailed Guide to Coercion in Javascript](https://blog.yousafkhan.me/detailed-guide-to-coercion-in-javascript)
