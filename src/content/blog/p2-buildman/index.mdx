@@ -1,0 +1,25 @@
+# Buildman - Project Builder App
+
+# Links
+
+[GitHub](https://github.com/khalatevarun/buildman) | [Demo](https://buildman.vercel.app/) 
+
+# Tech Stack
+
+Frontend - react,
+Backend - nodejs express
+
+# Diary
+Inspiration - Bolt.new ( opensoure project )
+
+steps carried out
+- setup backend with express
+- integrate claude API
+- learned how to stream messages ( fetch data that is ready to be consumed) 
+- went through how bolt works by inspectiving the network tab
+-- whenever a users enters a prompt - bolt first makes an API call to /template endpoint to get the initial project setup as the requirements ( this part of code is not opensourced )
+-- then bolt send api calls with 3 prompts 
+--- 1. whatever you build, make sure its beautiful, 
+--- 2. the initial project setup files received from above template
+--- 3. the prompt entered by the user to build xyz application with xyz 
+
