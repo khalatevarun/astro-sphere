@@ -4,34 +4,32 @@ summary: "Walkthrough of some quintessential services offered by AWS Amazon to b
 date: "Dec 20 2021"
 draft: false
 tags:
-- Tutorial
-- Reactjs
+  - Tutorial
+  - Reactjs
 ---
+
 This post is a quick walkthrough of some quintessential services offered by AWS Amazon to build a scalable and complex application, rather than a tutorial. 
 
 # Introduction
+
 After having a fair grasp on the frontend technologies I wanted to explore the backend development domain especially cloud based services. So, I decided to build a simple social network app using AWS services. 
-
-
 
 # What are we going to build?
 
-As mentioned in the title, we will be building a social network app with following features.
+As mentioned in the title, we will be building a social network app with following features:
 
- 
 1. **Authentication** - The users will be able to create an account, login, manipulate their passwords.
 2. **Post and Display tweets** - The users can post and also see tweets of other users on the app.
-3. **Follow and Timeline features**  - The users can follow and see the posts of followees on a dedicated timeline page.
-4. **Search posts **-  The users can search for posts with specific keywords.
+3. **Follow and Timeline features** - The users can follow and see the posts of followees on a dedicated timeline page.
+4. **Search posts** - The users can search for posts with specific keywords.
 
-Services we are going to have a look at and study the use cases of :
+Services we are going to have a look at and study the use cases of:
 - AWS Amplify CLI
 - Amazon Cognito
 - Amazon DynamoDB
 - AWS AppSync
 - AWS Lambda
 - Amazon Elasticsearch Service
-
 
 # Bootstrapping the app
 
@@ -45,36 +43,41 @@ AWS Amplify is a set of purpose-built tools and features that lets frontend web 
 
 The Amplify Command Line Interface (CLI) is a toolchain to configure and maintain your app backend from your local desktop. Configure cloud functionality using the CLI's interactive workflow and intuitive use cases such as auth, storage, API. 
 
-
 **We will use Amplify CLI to quickly provision backend resources on AWS.**
 
 # 1. Authentication 
 
-![architecture_auth.png](https://cdn.hashnode.com/res/hashnode/image/upload/v1640097719753/C7-hJcrDx.png)
+<div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+  <img src="https://cdn.hashnode.com/res/hashnode/image/upload/v1640097719753/C7-hJcrDx.png" alt="Architecture diagram showing authentication flow" style="width: 100%; height: auto;" />
+</div>
+
 ### Amazon Cognito
 
 Amazon Cognito provides authentication, authorization, and user management for your web and mobile apps. Your users can sign in directly with a user name and password, or through a third party such as Facebook, Amazon, Google or Apple.
 
 The two main components of Amazon Cognito are user pools and identity pools. User pools are user directories that provide sign-up and sign-in options for your app users. Identity pools enable you to grant your users access to other AWS services. You can use identity pools and user pools separately or together.
 
-![identityPool_userPool.png](https://cdn.hashnode.com/res/hashnode/image/upload/v1640080662459/LXFxchFbu.png)
+<div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+  <img src="https://cdn.hashnode.com/res/hashnode/image/upload/v1640080662459/LXFxchFbu.png" alt="Identity Pool and User Pool diagram" style="width: 100%; height: auto;" />
+</div>
 
-**The Amplify Framework uses Amazon Cognito as the main authentication provider. **
-
+**The Amplify Framework uses Amazon Cognito as the main authentication provider.**
 
 # 2. Post and Display Tweets
 
-
-![architecture_api.png](https://cdn.hashnode.com/res/hashnode/image/upload/v1640097746831/yjGpLiaaE.png)
+<div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+  <img src="https://cdn.hashnode.com/res/hashnode/image/upload/v1640097746831/yjGpLiaaE.png" alt="Architecture diagram showing API flow" style="width: 100%; height: auto;" />
+</div>
 
 To manage posts we need a database service and an API service to talk to this database service.
 
 ### Amazon DynamoDB 
+
 Considering the fact the we are building a social network app which can get complex and need to be scaled at any point of time, we need a database with flexible schema.
 
 Amazon DynamoDB being a NoSQL database that supports key-value and document data models satisfies our requirement for this particular use case. This enables DynamoDB to have a flexible schema, so each row can have any number of columns at any point in time. This allows you to easily adapt the tables as your business requirements change, without having to redefine the table schema as you would in relational databases.
 
-###  GraphQL API
+### GraphQL API
 
 GraphQL is a language for APIs that enables you to query and manipulate data easily through an intuitive and flexible syntax. GraphQL provides a syntax to describe data requirements and interactions, allowing you to ask for exactly what you need and get back predictable results. It also makes it possible for you to access many sources in a single request, reducing the number of network calls and bandwidth requirements, therefore saving battery life and CPU cycles consumed by your applications. 
 
@@ -84,12 +87,13 @@ AWS AppSync is a fully managed service that makes it easy to develop GraphQL API
 
 # Follow/Timeline feature
 
-
-![lambda.png](https://cdn.hashnode.com/res/hashnode/image/upload/v1640095507160/ptaiNTzWd.png)
-
+<div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+  <img src="https://cdn.hashnode.com/res/hashnode/image/upload/v1640095507160/ptaiNTzWd.png" alt="Lambda architecture diagram" style="width: 100%; height: auto;" />
+</div>
 
 **Current scenario**
-As we can see we have added 2 more tables to implement the desired features. 
+
+As we can see we have added 2 more tables to implement the desired features:
 - Timeline Table - To store the posts corresponding to a specific users based on his followees
 - FollowRelationship Table - To store the follow-followee pairs in the table.
 
@@ -98,27 +102,31 @@ We need a logic that run in the background and checks or picks only those posts 
 
 ### AWS Lambda
 
-AWS Lambda is a server less, event-driven compute service that lets you run code for virtually any type of application or backend service without provisioning or managing servers.
+AWS Lambda is a serverless, event-driven compute service that lets you run code for virtually any type of application or backend service without provisioning or managing servers.
 AWS Lambda is the best service that helps us in this scenario since we want the operation to be triggered only when needed instead of deploying the logic on a separate server which would lead to increased cost and computation.
 
 # Search posts
 
-![search.png](https://cdn.hashnode.com/res/hashnode/image/upload/v1640095030745/7ZyHzLRI6.png)
+<div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+  <img src="https://cdn.hashnode.com/res/hashnode/image/upload/v1640095030745/7ZyHzLRI6.png" alt="Search architecture diagram" style="width: 100%; height: auto;" />
+</div>
 
 Users may want to reach users of interest or search for post with interested words. We need to make our data in the table searchable.
 
 ### Amazon Elastic Search service
+
 Amazon Elasticsearch Service is a managed service that makes it easy to deploy, operate, and scale Elasticsearch in the AWS Cloud. Elasticsearch is a popular open-source search and analytics engine for use cases such as log analytics, real-time application monitoring, and click stream analytics.
 
 The Amplify CLI provides GraphQL directives to enhance your schema with additional capabilities.
 
-**searchable directive - 
-**
+**searchable directive**
+
 DynamoDB Streams hooks the inserted data into the DynamoDB Table and adds the record to Elasticsearch. To throw a query from the front end to Elasticsearch, execute a Query called searchPosts that is set up in the GraphQL API automatically.
 
-*This completes our application development🚀*
+*This completes our application development* 🚀
 
 # Conclusion
+
 We saw that how the AWS services help us make the development process of a complex and scalable application easy with different dedicated service providers. I really learned a lot while developing this application. 
 
- [This was a part of an AWS amplify workshop](https://amplify-sns.workshop.aws/en/) . You can try your hands on the AWS services as well by making projects thus understanding the use cases of each service better.
+[This was a part of an AWS amplify workshop](https://amplify-sns.workshop.aws/en/). You can try your hands on the AWS services as well by making projects thus understanding the use cases of each service better.
