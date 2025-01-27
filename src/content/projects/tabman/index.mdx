@@ -1,40 +1,43 @@
 ---
 title: "Tabman"
-summary: "A real-time website monitoring dashboard built with Next.js, NodeJS and Supabase. Track uptime, latency, and performance metrics for multiple websites with customizable monitoring intervals and data visualization."
+summary: "A Chrome extension that brings powerful tab management capabilities"
 date: "15 Nov 2022"
 draft: false
 tags:
-- Reactjs
-- Tailwind
-- Nodejs
-- PostgreSQL
+- vanilla js
+- chrome api
 
-demoUrl: https://watcherman.vercel.app
-repoUrl: https://github.com/khalatevarun/watcherman
+demoUrl: https://chromewebstore.google.com/detail/tabman/jpbafhiemcdjcoccicadffhioiaomkcf
+repoUrl: https://github.com/khalatevarun/tabman
 ---
+
+## Overview
+
+Navigate through your tabs with ease
+
+Tabman is a Chrome extension that brings powerful tab management capabilities to your browser to help you stay organized while working with multiple tabs and windows.
 
 ## Features
 
-- **Real-time Monitoring**: Track website status and performance in real-time
-- **Custom Monitoring Intervals**: Set different monitoring frequencies for each website
-- **Interactive Dashboard**: View detailed performance metrics and status history
-- **Data Visualization**: 
-  - Real-time latency graphs
-  - Status indicators with color coding
-  - Historical performance data
-- **Data Export**: Export monitoring data in CSV format with flexible date range selection
-- **Status Classifications**:
-  - UP: Website is responding normally
-  - DOWN: Website is not accessible
-  - DELAYED: Response time consistently exceeding threshold
-  - PENDING: Initial monitoring state
+### Instant Tab Search
+- Quick access with keyboard shortcut (Ctrl+Shift+F / Cmd+Shift+L)
+- Search across all windows and tabs
+- Real-time search with title and URL matching
+- Keyboard navigation support
+
+### Smart Duplicate Management
+- Automatic duplicate tab detection
+- One-click cleanup with "Keep Latest" option
+- Visual indication of duplicate sets
+- Efficient memory management
+
+### Window Organization
+- Drag and drop tabs between windows
+- Custom window naming
+- Window labels with pinned tabs
+- Visual overview of all windows
 
 ## Tech Stack
 
-- **Frontend**: Next.js with React
-- **Backend**: Supabase
-- **Database**: PostgreSQL (via Supabase)
-- **Charts**: Recharts
-- **UI Components**: shadcn/ui
-- **Icons**: Lucide React
-- **Date Handling**: date-fns
+- **VanillaJS**
+- **Chrome API**
