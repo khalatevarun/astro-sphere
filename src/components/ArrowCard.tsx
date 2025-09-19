@@ -2,18 +2,21 @@ import { formatDate } from "@lib/utils"
 import type { CollectionEntry } from "astro:content"
 
 type Props = {
-  entry: CollectionEntry<"blog"> | CollectionEntry<"projects">
+  entry: CollectionEntry<"blog"> | CollectionEntry<"projects"> | CollectionEntry<"contributions">
   pill?: boolean
 }
 
 export default function ArrowCard({entry, pill}: Props) {
+    const isContribution = entry.collection === "contributions"
+    const contributionData = isContribution ? entry.data as CollectionEntry<"contributions">["data"] : null
+    
     return (
       <a href={`/${entry.collection}/${entry.slug}`} class="group p-4 gap-3 flex items-center border rounded-lg hover:bg-black/5 hover:dark:bg-white/10 border-black/15 dark:border-white/20 transition-colors duration-300 ease-in-out">
       <div class="w-full group-hover:text-black group-hover:dark:text-white blend">
         <div class="flex flex-wrap items-center gap-2">
           {pill &&
             <div class="text-sm capitalize px-2 py-0.5 rounded-full border border-black/15 dark:border-white/25">
-              {entry.collection === "blog" ? "post" : "project"}
+              {entry.collection === "blog" ? "post" : entry.collection === "projects" ? "project" : "contribution"}
             </div>
           }
           <div class="text-sm uppercase">
@@ -27,8 +30,15 @@ export default function ArrowCard({entry, pill}: Props) {
         <div class="text-sm line-clamp-2">
           {entry.data.summary}
         </div>
+        
+        {isContribution && contributionData && (
+          <div class="text-xs mt-1 opacity-75">
+            <span class="font-medium">{contributionData.orgName}/{contributionData.repoName}</span>
+          </div>
+        )}
+        
         <ul class="flex flex-wrap mt-2 gap-1">
-          {entry.data.tags.map((tag:string) => ( // this line has an error; Parameter 'tag' implicitly has an 'any' type.ts(7006)
+          {entry.data.tags.map((tag: string) => (
             <li class="text-xs uppercase py-0.5 px-1 rounded bg-black/5 dark:bg-white/20 text-black/75 dark:text-white/75">
               {tag}
             </li>

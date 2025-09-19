@@ -1,0 +1,35 @@
+---
+import { type CollectionEntry, getCollection } from "astro:content"
+import PageLayout from "@layouts/PageLayout.astro"
+import TopLayout from "@layouts/TopLayout.astro"
+import BottomLayout from "@layouts/BottomLayout.astro"
+import ContributionTopLayout from "@layouts/ContributionTopLayout.astro"
+import ArticleBottomLayout from "@layouts/ArticleBottomLayout.astro"
+
+// Create the static contributions pages
+export async function getStaticPaths() {
+	const contributions = await getCollection("contributions")
+	return contributions.map((contribution) => ({
+		params: { slug: contribution.slug },
+		props: contribution,
+	}))
+}
+
+// Get the requested contribution
+type Props = CollectionEntry<"contributions">
+const contribution = Astro.props
+const { title, summary } = contribution.data
+---
+
+<PageLayout title={title} description={summary}>
+  <TopLayout>
+    <div class="animate">
+      <ContributionTopLayout entry={contribution} />
+    </div>
+  </TopLayout>
+  <BottomLayout>
+    <div class="animate">
+      <ArticleBottomLayout entry={contribution} />
+    </div>
+  </BottomLayout>
+</PageLayout>
