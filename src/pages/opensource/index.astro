@@ -7,10 +7,10 @@ import { OPENSOURCE } from "@consts"
 
 const collection = await getCollection("opensource")
 
-collection.sort((a, b) => new Date(b.data.dateContributed).getTime() - new Date(a.data.dateContributed).getTime())
+collection.sort((a: any, b: any) => new Date(b.data.dateContributed).getTime() - new Date(a.data.dateContributed).getTime())
 
 const opensource = await Promise.all(
-  collection.map(async (item) => {
+  collection.map(async (item: any) => {
     const { Content } = await item.render()
     return { ...item, Content }
   })
