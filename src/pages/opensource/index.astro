@@ -1,0 +1,82 @@
+---
+import { getCollection } from "astro:content"
+import PageLayout from "@layouts/PageLayout.astro"
+import TopLayout from "@layouts/TopLayout.astro"
+import BottomLayout from "@layouts/BottomLayout.astro"
+import { OPENSOURCE } from "@consts"
+
+const collection = await getCollection("opensource")
+
+collection.sort((a, b) => new Date(b.data.dateContributed).getTime() - new Date(a.data.dateContributed).getTime())
+
+const opensource = await Promise.all(
+  collection.map(async (item) => {
+    const { Content } = await item.render()
+    return { ...item, Content }
+  })
+)
+
+function formatDate(input: Date | string) {
+  if (typeof input === "string") return input
+
+  const month = input.toLocaleDateString("en-US", {
+    month: "short",
+  })
+
+  const year = new Date(input).getFullYear()
+  return `${month} ${year}`
+}
+---
+
+<PageLayout title={OPENSOURCE.TITLE} description={OPENSOURCE.DESCRIPTION}>
+  <TopLayout>
+    <div class="animate page-heading">
+      {OPENSOURCE.TITLE}
+    </div>
+  </TopLayout>
+  <BottomLayout>
+    {opensource.length === 0 ? (
+      <div class="text-center py-12">
+        <p class="text-gray-600 dark:text-gray-400 mb-4">
+          Will fill this up soon, you can visit my GitHub 
+          <a 
+            href="https://github.com/khalatevarun" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            class="text-blue-600 dark:text-blue-400 hover:underline font-medium"
+          >
+            here
+          </a>
+        </p>
+      </div>
+    ) : (
+      <ul>
+        { 
+          opensource.map((entry: any) => (
+            <li class="animate border-b border-black/10 dark:border-white/25 mt-4 py-8 first-of-type:mt-0 first-of-type:pt-0 last-of-type:border-none">
+              <div class="text-sm uppercase mb-4">
+                {formatDate(entry.data.dateContributed)}
+              </div>
+              <div class="text-black dark:text-white font-semibold">
+                {entry.data.projectName}
+              </div>
+              <div class="text-sm font-semibold">
+                {entry.data.contributionType}
+              </div>
+              {entry.data.repoUrl && (
+                <div class="text-sm mb-2">
+                  <a href={entry.data.repoUrl} target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:underline">
+                    View Repository
+                  </a>
+                </div>
+              )}
+              <article class="prose dark:prose-invert">
+                <entry.Content />
+              </article>
+            </li>
+          ))
+        }
+      </ul>
+    )}
+  </BottomLayout>
+</PageLayout>

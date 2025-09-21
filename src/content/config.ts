@@ -7,6 +7,8 @@ const work = defineCollection({
     role: z.string(),
     dateStart: z.coerce.date(),
     dateEnd: z.union([z.coerce.date(), z.string()]),
+    type: z.enum(["work", "education"]).default("work"),
+    location: z.string().optional(),
   }),
 })
 
@@ -42,4 +44,14 @@ const legal = defineCollection({
   }),
 })
 
-export const collections = { work, blog, projects, legal }
+const opensource = defineCollection({
+  type: "content",
+  schema: z.object({
+    projectName: z.string(),
+    contributionType: z.string(),
+    dateContributed: z.coerce.date(),
+    repoUrl: z.string().optional(),
+  }),
+})
+
+export const collections = { work, blog, projects, legal, opensource }

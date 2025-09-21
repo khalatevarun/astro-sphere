@@ -9,7 +9,7 @@ export const SITE: Site = {
 
 // Work Page
 export const WORK: Page = {
-  TITLE: "Work",
+  TITLE: "Profressional Experience & Education",
   DESCRIPTION: "Places I have worked.",
 }
 
@@ -25,6 +25,12 @@ export const PROJECTS: Page = {
   DESCRIPTION: "Recent projects I have worked on.",
 }
 
+// Open Source Page
+export const OPENSOURCE: Page = {
+  TITLE: "Open Source Contributions",
+  DESCRIPTION: "Open source projects I have contributed to.",
+}
+
 // Search Page
 export const SEARCH: Page = {
   TITLE: "Search",
@@ -33,22 +39,28 @@ export const SEARCH: Page = {
 
 // Links
 export const LINKS: Links = [
+  
   { 
     TEXT: "Home", 
     HREF: "/", 
+  },
+  { 
+    TEXT: "Open Source", 
+    HREF: "/opensource", 
+  },
+  { 
+    TEXT: "Projects", 
+    HREF: "/projects", 
   },
   { 
     TEXT: "Blog", 
     HREF: "/blog", 
   },
   { 
-    TEXT: "Projects", 
-    HREF: "/projects", 
-  },
-  // { 
-  //   TEXT: "Work", 
-  //   HREF: "/work", 
-  // },
+    TEXT: "Experience", 
+    HREF: "/work", 
+  }
+  
 ]
 
 // Socials

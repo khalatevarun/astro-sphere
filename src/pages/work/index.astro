@@ -9,12 +9,16 @@ const collection = await getCollection("work")
 
 collection.sort((a, b) => new Date(b.data.dateStart).getTime() - new Date(a.data.dateStart).getTime())
 
-const work = await Promise.all(
+const allEntries = await Promise.all(
   collection.map(async (item) => {
     const { Content } = await item.render()
     return { ...item, Content }
   })
 )
+
+// Separate work and education entries
+const workEntries = allEntries.filter(entry => entry.data.type === "work")
+const educationEntries = allEntries.filter(entry => entry.data.type === "education")
 
 function formatWorkDate(input: Date | string) {
   if (typeof input === "string") return input
@@ -35,25 +39,154 @@ function formatWorkDate(input: Date | string) {
     </div>
   </TopLayout>
   <BottomLayout>
-    <ul>
-      { 
-        work.map((entry) => (
-          <li class="animate border-b border-black/10 dark:border-white/25 mt-4 py-8 first-of-type:mt-0 first-of-type:pt-0 last-of-type:border-none">
-            <div class="text-sm uppercase mb-4">
-              {formatWorkDate(entry.data.dateStart)} - {formatWorkDate(entry.data.dateEnd)}
-            </div>
-            <div class="text-black dark:text-white font-semibold">
-              {entry.data.company}
-            </div>
-            <div class="text-sm font-semibold">
-              {entry.data.role}
-            </div>
-            <article class="prose dark:prose-invert">
-              <entry.Content />
-            </article>
-          </li>
-        ))
-      }
-    </ul>
+    <!-- Tab Navigation -->
+    <div class="mb-8">
+      <div class="flex justify-center border-b border-black/10 dark:border-white/25">
+        <button 
+          id="work-tab" 
+          class="tab-button px-6 py-3 font-semibold text-sm transition-colors duration-300 ease-in-out border-b-2 border-transparent hover:text-black dark:hover:text-white active"
+          data-tab="work"
+        >
+          Work Experience
+        </button>
+        <button 
+          id="education-tab" 
+          class="tab-button px-6 py-3 font-semibold text-sm transition-colors duration-300 ease-in-out border-b-2 border-transparent hover:text-black dark:hover:text-white"
+          data-tab="education"
+        >
+          Education
+        </button>
+      </div>
+    </div>
+
+    <!-- Work Tab Content -->
+    <div id="work-content" class="tab-content">
+      <ul>
+        { 
+          workEntries.map((entry) => (
+            <li class="animate border-b border-black/10 dark:border-white/25 mt-4 py-6 first-of-type:mt-0 first-of-type:pt-0 last-of-type:border-none">
+              <div class="flex justify-between items-start">
+                <div>
+                  <div class="text-black dark:text-white font-semibold">
+                    {entry.data.company}
+                  </div>
+                  <div class="text-black dark:text-white font-normal">
+                    {entry.data.role}
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div class="text-gray-500 dark:text-gray-400 text-sm">
+                    {formatWorkDate(entry.data.dateStart)} - {formatWorkDate(entry.data.dateEnd)}
+                  </div>
+                  {entry.data.location && (
+                    <div class="text-gray-500 dark:text-gray-400 text-sm mt-1">
+                      📍 {entry.data.location}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </li>
+          ))
+        }
+      </ul>
+      {workEntries.length === 0 && (
+        <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+          No work experience entries yet.
+        </div>
+      )}
+    </div>
+
+    <!-- Education Tab Content -->
+    <div id="education-content" class="tab-content hidden">
+      <ul>
+        { 
+          educationEntries.map((entry) => (
+            <li class="animate border-b border-black/10 dark:border-white/25 mt-4 py-6 first-of-type:mt-0 first-of-type:pt-0 last-of-type:border-none">
+              <div class="flex justify-between items-start">
+                <div>
+                  <div class="text-black dark:text-white font-semibold">
+                    {entry.data.company}
+                  </div>
+                  <div class="text-black dark:text-white font-normal">
+                    {entry.data.role}
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div class="text-gray-500 dark:text-gray-400 text-sm">
+                    {formatWorkDate(entry.data.dateStart)} - {formatWorkDate(entry.data.dateEnd)}
+                  </div>
+                  {entry.data.location && (
+                    <div class="text-gray-500 dark:text-gray-400 text-sm mt-1">
+                      📍 {entry.data.location}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </li>
+          ))
+        }
+      </ul>
+      {educationEntries.length === 0 && (
+        <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+          No education entries yet.
+        </div>
+      )}
+    </div>
   </BottomLayout>
 </PageLayout>
+
+<style>
+  .tab-button.active {
+    @apply text-black dark:text-white border-black dark:border-white;
+  }
+  
+  .tab-button:not(.active) {
+    @apply text-gray-500 dark:text-gray-400;
+  }
+</style>
+
+<script>
+  function initializeTabs() {
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    function switchTab(targetTab: string) {
+      // Remove active class from all buttons
+      tabButtons.forEach(button => button.classList.remove('active'));
+      
+      // Hide all tab contents
+      tabContents.forEach(content => content.classList.add('hidden'));
+      
+      // Show target tab content
+      const targetContent = document.getElementById(targetTab + '-content');
+      if (targetContent) {
+        targetContent.classList.remove('hidden');
+      }
+      
+      // Add active class to clicked button
+      const targetButton = document.querySelector(`[data-tab="${targetTab}"]`);
+      if (targetButton) {
+        targetButton.classList.add('active');
+      }
+    }
+
+    // Add click event listeners to tab buttons
+    tabButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        const tabName = button.getAttribute('data-tab');
+        if (tabName) {
+          switchTab(tabName);
+        }
+      });
+    });
+
+    // Initialize with work tab active
+    switchTab('work');
+  }
+
+  // Initialize tabs on page load
+  document.addEventListener('DOMContentLoaded', initializeTabs);
+  
+  // Re-initialize tabs after Astro page transitions
+  document.addEventListener('astro:after-swap', initializeTabs);
+</script>

@@ -81,20 +81,23 @@ const stack = [
       <div class='relative w-full h-full flex items-center justify-center'>
         <div class='p-5 text-center'>
           <p class='animated text-lg md:text-xl lg:text-2xl font-semibold opacity-75'>
-            Hello, I am ...
+            Hello, I am
           </p>
           <p class='animated text-2xl md:text-3xl lg:text-4xl font-bold uppercase text-black dark:text-white'>
             Varun Khalate
           </p>
-          <p class='animated text-sm md:text-base lg:text-lg opacity-75'>
-            I code a bit, debug a lot, sit forever if it clicks, and learn from every oops
-          </p>
           <div id="ctaButtons" class='animated flex flex-wrap gap-4 justify-center mt-5'>
-            <a href='/blog' class='py-2 px-4 rounded truncate text-xs md:text-sm lg:text-base bg-black dark:bg-white text-white dark:text-black hover:opacity-75 blend'>
-              Read my blog
+            <a href='/opensource' class='py-2 px-4 truncate rounded text-xs md:text-sm lg:text-base border border-black/25 dark:border-white/25 hover:bg-black/5 hover:dark:bg-white/15 blend'>
+              I contribute to open source
             </a>
             <a href='/projects' class='py-2 px-4 truncate rounded text-xs md:text-sm lg:text-base border border-black/25 dark:border-white/25 hover:bg-black/5 hover:dark:bg-white/15 blend'>
-              View my projects
+              I build creative projects
+            </a>
+            <a href='/blog' class='py-2 px-4 truncate rounded text-xs md:text-sm lg:text-base border border-black/25 dark:border-white/25 hover:bg-black/5 hover:dark:bg-white/15 blend'>
+              I document my learnings
+            </a>
+            <a href='/work' class='py-2 px-4 truncate rounded text-xs md:text-sm lg:text-base border border-black/25 dark:border-white/25 hover:bg-black/5 hover:dark:bg-white/15 blend'>
+              I bring professional experience
             </a>
           </div>
           <div class="flex justify-center mt-8">
@@ -119,128 +122,4 @@ const stack = [
       </div>
     </div>
   </section>
-
-  <div class="relative bg-white dark:bg-black">
-    <div class="mx-auto max-w-screen-sm p-5 space-y-24 pb-16">
-
-      <!-- About Section -->
-      <section class="animate">
-        <article>
-          <p>I am a software engineer and product builder with a passion for UI/UX and problem-solving.</p>
-      
-          <p>My journey with coding has been anything but conventional. From struggling with loops in school to discovering the power of Google and Stack Overflow in college, it took me years to truly appreciate coding. If you're curious about how I went from dreading programming labs to building software, check out <a href="/blog/my-first-line" target="_blank">this blog post</a> where I share my story.</p>
-      
-          <p>Since then, I've:</p>
-          <ul>
-            <li>Worked as a Software Development Engineer at India's top stockbroking app, <b><a href="https://groww.in/" target="_blank">Groww</a></b>, enhancing user engagement and streamlining financial tools on the web app.</li>
-            <li>Co-founded and scaled <b><a href="https://gradgoggles.com/" target="_blank">Gradgoggles</a></b>, a virtual yearbook and scrapbook platform, growing it to 1700+ users across multiple institutions.</li>
-            <li>Contributed to open-source development for <b><a href="https://greenstand.org/" target="_blank">Greenstand</a></b>, helping build version 2 of the WebMap Tree Tracker Client App to track reforestation efforts.</li>
-          </ul>
-      
-          <p>Currently:</p>
-          <p>I'm pursuing an MSCS at UIC to deepen my software engineering fundamentals and gain fresh industry perspectives.</p>
-          <p>I'm also working as a Full Stack Developer at UIC Student Affairs, developing a project to streamline CTA enrollment for students.</p>
-        </article>
-      </section>
-
-      <!-- Blog Preview Section -->
-      <section class="animate">
-        <div class="space-y-4">
-          <div class="flex justify-between">
-            <p class="font-semibold text-black dark:text-white">
-              Recent posts
-            </p>
-            <a href="/blog" class="w-fit col-span-3 group flex gap-1 items-center underline decoration-[.5px] decoration-black/25 dark:decoration-white/50 hover:decoration-black dark:hover:decoration-white text-black dark:text-white underline-offset-2 blend">
-              <span class="text-black/75 dark:text-white/75 group-hover:text-black group-hover:dark:text-white blend">
-                All posts
-              </span>
-            </a>
-          </div>
-          <ul class="space-y-4">
-            {posts.map((post) => (
-              <li>
-                <ArrowCard entry={post} />
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-      <!-- Tech Stack Section -->
-      <!-- <section class="animate">
-        <div class="space-y-4">
-          <p class="font-semibold text-black dark:text-white">
-            Website build with
-          </p>
-          <div class="flex flex-wrap items-center gap-2 mt-5">
-            {stack.map(item => (
-              <StackCard 
-                text={item.text}
-                icon={item.icon}
-                href={item.href}
-              />
-            ))}
-          </div>
-          <div>
-            Performing reactivity and statefulness, special guest
-            <a href="https://www.solidjs.com/" target="_blank" class="w-fit group underline decoration-[.5px] decoration-black/25 dark:decoration-white/50 hover:decoration-black dark:hover:decoration-white text-black dark:text-white underline-offset-2 blend">
-              <span class="text-black/75 dark:text-white/75 group-hover:text-black group-hover:dark:text-white blend">
-                SolidJS
-              </span>
-            </a>
-          </div>
-        </div>
-      </section> -->
-
-      <!-- Project Preview Section -->
-      <section class="animate">
-        <div class="space-y-4">
-          <div class="flex justify-between">
-            <p class="font-semibold text-black dark:text-white">
-              Recent projects
-            </p>
-            <a href="/projects" class="w-fit col-span-3 group flex gap-1 items-center underline decoration-[.5px] decoration-black/25 dark:decoration-white/50 hover:decoration-black dark:hover:decoration-white text-black dark:text-white underline-offset-2 blend">
-              <span class="text-black/75 dark:text-white/75 group-hover:text-black group-hover:dark:text-white blend">
-                All projects
-              </span>
-            </a>
-          </div>
-          <ul class="space-y-4">
-            {projects.map((project) => (
-              <li>
-                <ArrowCard entry={project} />
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-      <!-- Contact Section -->
-      <section class="animate">
-        <div>
-          <p class="font-semibold text-black dark:text-white">
-            Let's Connect
-          </p>
-          <p>
-            Reach out to me via email or on social media.
-          </p>
-          <div class="grid grid-cols-4 gap-y-2 mt-4 auto-cols-min">
-            {SOCIALS.map(social => (
-              <div class="col-span-1 flex items-center gap-1">
-                <span class="whitespace-nowrap truncate">
-                  {social.NAME}
-                </span>
-              </div>
-              <div class="col-span-3 truncate">
-                <a href={social.HREF} target="_blank" class="w-fit col-span-3 group flex gap-1 items-center underline decoration-[.5px] decoration-black/25 dark:decoration-white/50 hover:decoration-black dark:hover:decoration-white text-black dark:text-white underline-offset-2 blend">
-                  <span class="text-black/75 dark:text-white/75 group-hover:text-black group-hover:dark:text-white blend">
-                    {social.TEXT}
-                  </span>
-                </a>
-              </div>
-            ))}
-        </div>
-      </section>
-    </div>
-  </div>
 </PageLayout>

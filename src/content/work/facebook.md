@@ -1,10 +1,8 @@
 ---
-company: "Facebook"
-role: "Intern"
-dateStart: "07/01/2019"
-dateEnd: "12/31/2019"
+company: "Gradgoggles"
+role: "Co-founder"
+dateStart: "05/01/2020"
+dateEnd: "05/31/2021"
+type: "work"
+location: "Pune, India"
 ---
-
-Iure illo neque tempora, voluptatem est quaerat voluptas praesentium ipsa dolorem dignissimos nulla ratione distinctio quae maiores eligendi nostrum? Quibusdam, debitis voluptatum, lorem ipsum dolor. Sit amet consectetur adipisicing elit.
-
-- Sit amet consectetur adipisicing elit.
