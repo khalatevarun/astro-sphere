@@ -13,4 +13,4 @@ The front end of the treetracker web map application - an environmental impact p
 - Improved application performance and accessibility
 - Contributed to environmental impact tracking technology
 
-[View my merged PRs](https://github.com/Greenstand/treetracker-web-map-client/pulls?q=is%3Apr+author%3Akhalatevarun+is%3Aclosed)
+[View merged PRs](https://github.com/Greenstand/treetracker-web-map-client/pulls?q=is%3Apr+author%3Akhalatevarun+is%3Aclosed)

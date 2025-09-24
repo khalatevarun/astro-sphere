@@ -13,4 +13,4 @@ AI-powered natural language end-to-end testing framework that simplifies the tes
 - Enhanced AI test execution capabilities
 - **Won $1,100 in bounties** for solving critical issues and implementing valuable features
 
-[View my merged PRs](https://github.com/antiwork/shortest/pulls?q=is%3Apr+is%3Aclosed+author%3Akhalatevarun)
+[View merged PRs](https://github.com/antiwork/shortest/pulls?q=is%3Apr+is%3Aclosed+author%3Akhalatevarun)
