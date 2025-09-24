@@ -9,6 +9,7 @@ const work = defineCollection({
     dateEnd: z.union([z.coerce.date(), z.string()]),
     type: z.enum(["work", "education"]).default("work"),
     location: z.string().optional(),
+    achievements: z.array(z.string()).optional(),
   }),
 })
 
