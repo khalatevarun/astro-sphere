@@ -1,0 +1,152 @@
+---
+title: "Auto-syncing GitHub READMEs to My Portfolio"
+summary: "How I got tired of maintaining documentation in two places and built a solution to automatically fetch GitHub README content for my portfolio projects"
+date: "Oct 10 2025"
+draft: false
+tags:
+- automation
+- github
+- astro
+- portfolio
+---
+
+---
+
+I was revisiting my GitHub projects yesterday—adding better system design documentation to my [Base](https://github.com/khalatevarun/base) deployment platform and planning new functionality for my [Builderman](https://github.com/khalatevarun/builderman) project. You know how it is with side projects: they sit incomplete until you suddenly find that spark again to work on them and make them better.
+
+But as I was polishing the documentation, I realized I was facing the same annoying problem: maintaining project descriptions in two places. I'd update the GitHub README with detailed explanations, then manually copy-paste the content to my portfolio. The thing is, you never know who will visit your GitHub first or stumble upon your personal portfolio first, so both need to be up-to-date and professional.
+
+This felt... exhausting. Really exhausting.
+
+Here I am, supposedly building cool projects and learning about automation, CI/CD, and making developers' lives easier, yet I'm manually syncing documentation between two places like it's 2010. The irony wasn't lost on me.
+
+## Frustration
+
+Every time I update a project:
+1. Polish the GitHub README with better explanations
+2. Copy the content to my portfolio 
+3. Adjust formatting for the portfolio
+4. Realize I made a typo
+5. Fix it in both places
+6. Repeat this dance every few weeks
+
+As someone who's trying to understand how platforms like Vercel work under the hood, I felt embarrassed doing manual work that screamed "this should be automated!"
+
+The worst part? I'd sometimes update the GitHub README and forget to sync it to my portfolio, leaving visitors with outdated information. Not exactly the professional image I'm going for when job hunting.
+
+## Why Not?
+
+I was staring at my Base project description, thinking about how much effort I put into explaining the system architecture in the README, when I thought: **"Why can't my portfolio just read this directly from GitHub?"**
+
+This felt like the kind of problem that should have an obvious solution. But as I looked around, I couldn't find a simple way to do this in Astro (my static site generator of choice). Sure, there are heavyweight CMSs and complex solutions, but for something this straightforward?
+
+That's when my engineering brain kicked in: **"If it doesn't exist, build it."**
+
+## Building
+
+The concept was simple: fetch README content from GitHub's API at build time and render it in my portfolio. But as I started implementing, I realized there were several gotchas:
+
+### 1. GitHub API Integration
+```typescript
+export async function fetchGitHubReadme(repoUrl: string): Promise<string | null> {
+  const match = repoUrl.match(/github\.com\/([^\/]+)\/([^\/]+)/);
+  if (!match) return null;
+  
+  const [, owner, repo] = match;
+  const cleanRepo = repo.replace('.git', '');
+  
+  const response = await fetch(
+    `https://api.github.com/repos/${owner}/${cleanRepo}/readme`,
+    {
+      headers: {
+        'Accept': 'application/vnd.github.v3.raw',
+        'User-Agent': 'astro-portfolio'
+      }
+    }
+  );
+  
+  return response.ok ? await response.text() : null;
+}
+```
+
+### 2. The Image Problem
+The first implementation worked, but images were broken! GitHub README images use relative paths like `./diagram.png`, which obviously don't work when the content is served from my domain.
+
+I needed to convert these to absolute GitHub URLs:
+
+```typescript
+function fixImageUrls(content: string, owner: string, repo: string): string {
+  const baseUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main`;
+  
+  return content
+    // Fix markdown images: ![alt](./path/image.jpg)
+    .replace(/!\[([^\]]*)\]\((?!https?:\/\/)([^)]+)\)/g, (match, alt, path) => {
+      const cleanPath = path.startsWith('./') ? path.slice(2) : path;
+      return `![${alt}](${baseUrl}/${cleanPath})`;
+    })
+    // Fix HTML img tags too
+    .replace(/<img([^>]*?)src=["'](?!https?:\/\/)([^"']+)["']([^>]*?)>/g, (match, before, path, after) => {
+      const cleanPath = path.startsWith('./') ? path.slice(2) : path;
+      return `<img${before}src="${baseUrl}/${cleanPath}"${after}>`;
+    });
+}
+```
+
+### 3. Astro Integration
+I extended my content collection schema to support a `useGitHubReadme` flag:
+
+```typescript
+const projects = defineCollection({
+  schema: z.object({
+    title: z.string(),
+    summary: z.string(),
+    repoUrl: z.string().optional(),
+    useGitHubReadme: z.boolean().default(false), // The magic flag
+    // ... other fields
+  }),
+})
+```
+
+Then in my project pages, I check this flag and fetch content accordingly:
+
+```astro
+---
+// Fetch GitHub README if flag is set
+let githubContent = null
+if (useGitHubReadme && repoUrl) {
+  githubContent = await fetchGitHubReadme(repoUrl)
+}
+---
+
+{githubContent ? (
+  <article class="prose prose-lg">
+    <div set:html={githubContent}></div>
+  </article>
+) : (
+  <ArticleLayout entry={project} />
+)}
+```
+
+## Result
+
+Now my workflow is beautifully simple:
+1. Update GitHub README with better explanations, diagrams, code examples
+2. Set `useGitHubReadme: true` in my portfolio project frontmatter
+3. Build and deploy
+4. ✨ Portfolio automatically reflects the latest GitHub content
+
+No more copy-pasting. No more sync issues. No more maintaining documentation in two places.
+
+## Learnings
+
+This small project taught me something important: **the best solutions often come from your own frustrations**. I was so focused on building complex deployment platforms and learning "big" technologies that I almost missed this simple quality-of-life improvement.
+
+It also reinforced why I love building things from scratch. Sure, I could have used a heavyweight CMS or found some complex workaround, but understanding the problem deeply and building a targeted solution was way more satisfying.
+
+## What's Next?
+
+The more I think about it, this could be useful for other developers facing the same problem. Maybe it's worth packaging into a reusable library? Something framework-agnostic that works with React, Vue, Astro, or any static site generator?
+
+But that's a problem for another day. For now, I'm just happy that my portfolio stays in sync with my GitHub repositories automatically. One less thing to worry about, one more thing learned.
+
+---
