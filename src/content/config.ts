@@ -34,6 +34,7 @@ const projects = defineCollection({
     draft: z.boolean().optional(),
     demoUrl: z.string().optional(),
     repoUrl: z.string().optional(),
+    useGitHubReadme: z.boolean().default(false),
   }),
 })
 

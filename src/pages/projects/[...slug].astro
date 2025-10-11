@@ -5,6 +5,7 @@ import TopLayout from "@layouts/TopLayout.astro"
 import BottomLayout from "@layouts/BottomLayout.astro"
 import ArticleTopLayout from "@layouts/ArticleTopLayout.astro"
 import ArticleBottomLayout from "@layouts/ArticleBottomLayout.astro"
+import { fetchGitHubReadme } from "@lib/github"
 
 // Create the static projects pages
 export async function getStaticPaths() {
@@ -18,7 +19,18 @@ export async function getStaticPaths() {
 // Get the requested project
 type Props = CollectionEntry<"projects">
 const project = Astro.props
-const { title, summary } = project.data
+const { title, summary, useGitHubReadme, repoUrl } = project.data
+
+// Fetch GitHub README if flag is set and repoUrl exists
+let githubContent = null
+if (useGitHubReadme && repoUrl) {
+  try {
+    githubContent = await fetchGitHubReadme(repoUrl)
+  } catch (error) {
+    console.error('Failed to fetch GitHub README:', error)
+    githubContent = null
+  }
+}
 ---
 
 <PageLayout title={title} description={summary}>
@@ -29,7 +41,13 @@ const { title, summary } = project.data
   </TopLayout>
   <BottomLayout>
     <div class="animate">
-      <ArticleBottomLayout entry={project} />
+      {githubContent && githubContent.length > 0 ? (
+        <article class="max-w-full prose prose-neutral dark:prose-invert prose-lg prose-headings:text-black prose-headings:dark:text-white">
+          <div set:html={githubContent}></div>
+        </article>
+      ) : (
+        <ArticleBottomLayout entry={project} />
+      )}
     </div>
   </BottomLayout>
 </PageLayout>
