@@ -6,6 +6,9 @@ draft: false
 tags:
   - Tutorial
   - JavaScript
+tags:
+- tutorial
+- javascript
 ---
 
 > There are many blog posts, articles, and stack overflow threads that exist on this topic already. This article is my attempt to put the collective knowledge of the internet into one composed summary that is easy to follow and reference.

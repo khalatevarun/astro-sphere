@@ -4,17 +4,11 @@ summary: "This is an attempt to give you a step by step tutorial to handle user 
 date: "Sep 13 2021"
 draft: false
 tags:
-- Tutorial
-- Firebase
-- Reactjs
+- reactjs
+- tutorial
 ---
 
 This is an attempt to give you a step by step tutorial to handle user authentication in ReactJS using Firebase.
-
-If you face any issues throughout the tutorial, you can refer to the code in the [GitHub repository](https://github.com/khalatevarun/react-auth-firebase.git) .
-
-Our goal is to build a simple project which displays a message after successful login or creation of new account along with the username.
-
 Here is a quick preview
 
 ![react-firebase-authentication-preview.gif](https://cdn.hashnode.com/res/hashnode/image/upload/v1631653926924/5u4a6M-Oh.gif)
