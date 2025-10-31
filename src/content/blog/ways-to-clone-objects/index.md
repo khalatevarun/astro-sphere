@@ -4,9 +4,6 @@ summary: "Diving deeper into the concept of object cloning and exploring differe
 date: "May 14, 2022"
 draft: false
 tags:
-  - Tutorial
-  - JavaScript
-tags:
 - tutorial
 - javascript
 ---
