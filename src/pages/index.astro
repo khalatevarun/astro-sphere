@@ -7,11 +7,11 @@ import MeteorShower from "@components/MeteorShower.astro"
 import Image from "astro/components/Image.astro"
 import { formatDate } from "@lib/utils"
 
-// Fetch featured entries (blogs + projects) server-side
-const posts = (await getCollection("blog"))
-  .filter(post => !post.data.draft)
-  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
-  .slice(0, 3)
+const featuredSlugs = ["call", "memoization-in-react", "auto-sync-github-readme"]
+const allPosts = (await getCollection("blog")).filter(post => !post.data.draft)
+const posts = featuredSlugs
+  .map(slug => allPosts.find(post => post.slug === slug))
+  .filter((post): post is NonNullable<typeof post> => Boolean(post))
 
 const projects = (await getCollection("projects"))
   .filter(p => !p.data.draft)
@@ -104,7 +104,7 @@ const projects = (await getCollection("projects"))
   <section class="relative w-full max-w-4xl mx-auto px-6 -mt-12 md:-mt-20 lg:-mt-24 z-10">
     <div class="mb-6 text-center">
       <h2 class="text-2xl font-bold">Featured Writings</h2>
-      <p class="text-sm opacity-75 mt-1">Latest thoughts and insights from my blog.</p>
+      <p class="text-sm opacity-75 mt-1">Handpicked thoughts and insights from my blog.</p>
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {posts.map((entry) => (
