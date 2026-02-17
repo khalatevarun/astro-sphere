@@ -1,0 +1,61 @@
+---
+title: "ASKH"
+summary: "If you can name it, you can askh for it. AI-powered web dev in the browser—describe what you want, get live code."
+date: "Jan 29 2026"
+draft: false
+tags:
+
+---
+
+## Why I'm Building This
+
+I'm reinventing the wheel, taking inspiration from [bolt.new](https://bolt.new), which has parts of its code space open sourced and whose architecture I have borrowed from in places. I have not moved to their newer agentic workflow and instead stay closer to their original v1 style with plain LLM chat completions. But that's not the point. The point is to use this as an opportunity to experiment with AI coding tools and see what's possible when you embrace "vibe coding", building an entire app with Cursor, Claude Code, and Open Code as your pair programming partners.
+
+The real goal here isn't to build the next big thing. It's to push AI-assisted development to its limits. Can I handle edge cases better? Can I focus on the blind spots? Can I polish the rough edges that most projects leave unfinished? Can I make the experience truly great, not just functional?
+
+This is also an opportunity to leverage code completion tools efficiently, develop better development workflows, and prove that I really care about what I build. I focus on those small leaks and paint them uniformly. The details matter. The consistency matters. The care shows.
+
+## How It Works
+
+You describe what you want. An LLM generates code as structured XML artifacts. WebContainer runs it live in your browser. Simple concept, complex execution.
+
+The current focus has been entirely on the frontend experience, making the iteration flow smooth, the code editor feel natural, the preview instant. There's no auth yet. No backend persistence. Just the core loop: ask → generate → preview → iterate.
+
+What makes it interesting (to me, at least) is the attention to the details that usually get skipped:
+
+- **Checkpoint system**: Every iteration saved, every version restorable
+- **Content-addressable storage**: Efficient file versioning without duplicating identical content
+- **HMR magic**: Leveraging hot module replacement for instant code changes in WebContainer
+- **Error handling**: One-click fixes because mistakes happen
+- **Framework agnostic**: React, Vue, Svelte, Node.js, your choice, not mine
+
+## What I've Learned (So Far)
+
+**Artifacts are brilliant.** When you need an LLM to respond with both text and code, XML artifacts are the way to go. The structure is clear, parsing is straightforward, and LLMs handle them surprisingly well. It's become my go-to pattern for any AI interaction that needs structured output.
+
+**HMR isn't just for local development.** I always thought hot module replacement was a developer convenience tool. But when you're generating code and need it to reflect instantly in WebContainer, HMR becomes a core feature. Watching code changes appear in real-time without full restarts, that's the kind of detail that makes an experience feel magical.
+
+**File versioning is harder than it sounds.** Handling multiple versions of files efficiently without deduplicating identical instances requires careful design. Content-addressable storage with blob stores and checkpoint trees sounds elegant until you're debugging why a file isn't updating correctly. But when it works, it's beautiful.
+
+**Edge cases are where the magic happens.** The happy path is easy. It's the error states, the loading states, the "what if the LLM returns malformed XML" cases that separate good from great. That's where I'm spending most of my time now.
+
+**AI coding tools are incredible, but they're not magic.** Cursor, Claude Code, Open Code, they're amazing at generating code, but they need guidance. They need context. They need you to think through the architecture and point them in the right direction. The "vibe coding" experience is real, but it's collaborative, not automatic.
+
+## The Stack
+
+- **React + TypeScript**: Frontend framework
+- **Vite**: Build tool
+- **Tailwind CSS**: Styling
+- **Framer Motion**: Animations
+- **Monaco Editor**: Code editor
+- **WebContainer API**: Browser-based Node.js runtime
+- **Express + TypeScript**: Backend API
+- **OpenRouter**: LLM API gateway
+
+Nothing fancy. Just tools that work.
+
+## Current State
+
+Still in development. Still vibe coding. Still learning.
+
+The frontend experience is the current focus. Soon I'll shift to adding auth and backend persistence. But for now, it's about making the core loop feel perfect.
