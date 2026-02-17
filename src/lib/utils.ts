@@ -20,6 +20,13 @@ export function readingTime(html: string) {
   return `${readingTimeMinutes} min read`
 }
 
+export function formatMonthDay(date: Date) {
+  return Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+  }).format(date)
+}
+
 export function relativeTime(date: Date) {
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000)
   if (seconds < 60) return `${seconds}s ago`

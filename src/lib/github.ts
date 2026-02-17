@@ -12,6 +12,7 @@ export interface GitHubActivityItem {
 export interface GitHubRepoActivity {
   repo: string;
   repoUrl: string;
+  description?: string;
   items: GitHubActivityItem[];
 }
 
@@ -249,9 +250,24 @@ export async function fetchGitHubActivity(username: string, days = 7): Promise<G
     }
 
     // Sort repos by most recent activity
-    return Array.from(repoMap.entries())
+    const sorted = Array.from(repoMap.entries())
       .map(([repo, data]) => ({ repo, ...data }))
       .sort((a, b) => b.items[0].date.getTime() - a.items[0].date.getTime());
+
+    // Fetch repo descriptions from GitHub API
+    const withDescriptions = await Promise.all(
+      sorted.map(async (r) => {
+        try {
+          const res = await fetch(`https://api.github.com/repos/${r.repo}`, { headers });
+          if (!res.ok) return r;
+          const data = await res.json();
+          return { ...r, description: data.description ?? undefined };
+        } catch {
+          return r;
+        }
+      }),
+    );
+    return withDescriptions;
   } catch (error) {
     console.error('Error fetching GitHub activity:', error);
     return [];
