@@ -56,4 +56,22 @@ const opensource = defineCollection({
   }),
 })
 
-export const collections = { work, blog, projects, legal, opensource }
+const hackathons = defineCollection({
+  type: "content",
+  schema: z.object({
+    title: z.string(),
+    summary: z.string(),
+    date: z.coerce.date(),
+    dateLabel: z.string().optional(),
+    prizes: z.string().optional(),
+    projectName: z.string(),
+    projectTagline: z.string(),
+    demoUrl: z.string(),
+    repoUrl: z.string(),
+    videoUrl: z.string().optional(),
+    videoEmbedHtml: z.string().optional(),
+    draft: z.boolean().optional(),
+  }),
+})
+
+export const collections = { work, blog, projects, legal, opensource, hackathons }

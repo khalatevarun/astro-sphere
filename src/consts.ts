@@ -31,6 +31,12 @@ export const OPENSOURCE: Page = {
   DESCRIPTION: "Open source projects I have contributed to.",
 }
 
+// Hackathons Page
+export const HACKATHONS: Page = {
+  TITLE: "Hackathons",
+  DESCRIPTION: "Hackathons I've participated in and my submission demos.",
+}
+
 // Search Page
 export const SEARCH: Page = {
   TITLE: "Search",
@@ -51,6 +57,10 @@ export const LINKS: Links = [
   { 
     TEXT: "Projects", 
     HREF: "/projects", 
+  },
+  { 
+    TEXT: "Hackathons", 
+    HREF: "/hackathons", 
   },
   { 
     TEXT: "Blog", 

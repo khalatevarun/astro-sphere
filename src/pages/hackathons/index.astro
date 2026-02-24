@@ -1,0 +1,103 @@
+---
+import { getCollection } from "astro:content"
+import PageLayout from "@layouts/PageLayout.astro"
+import TopLayout from "@layouts/TopLayout.astro"
+import BottomLayout from "@layouts/BottomLayout.astro"
+import { HACKATHONS } from "@consts"
+
+const collection = await getCollection("hackathons")
+const hackathons = collection
+  .filter((h) => !h.data.draft)
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
+---
+
+<PageLayout title={HACKATHONS.TITLE} description={HACKATHONS.DESCRIPTION}>
+  <TopLayout>
+    <div class="animate page-heading">
+      {HACKATHONS.TITLE}
+    </div>
+  </TopLayout>
+  <BottomLayout>
+    <p class="animate text-gray-600 dark:text-gray-400 mb-10">
+      {HACKATHONS.DESCRIPTION}
+    </p>
+    {hackathons.length === 0 ? (
+      <div class="text-center py-12">
+        <p class="text-gray-600 dark:text-gray-400">
+          No hackathon entries yet. Check back soon.
+        </p>
+      </div>
+    ) : (
+      <ul class="space-y-12">
+        {hackathons.map((entry) => {
+          return (
+            <li class="animate border-b border-black/10 dark:border-white/25 pb-12 last:border-none last:pb-0">
+              <div class="mb-4">
+                <h2 class="text-xl font-semibold text-black dark:text-white">
+                  {entry.data.title}
+                </h2>
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm text-gray-600 dark:text-gray-400">
+                  {entry.data.dateLabel && (
+                    <span>{entry.data.dateLabel}</span>
+                  )}
+                  {entry.data.prizes && (
+                    <span class="font-medium text-amber-600 dark:text-amber-400">
+                      {entry.data.prizes}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <p class="text-gray-700 dark:text-gray-300 mb-6 max-w-2xl">
+                {entry.data.summary}
+              </p>
+
+              <div class="mt-4">
+                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                  My submission
+                </h3>
+                <h4 class="text-lg font-semibold text-black dark:text-white mb-1">
+                  {entry.data.projectName}
+                </h4>
+                <p class="text-gray-600 dark:text-gray-400 text-sm mb-3">
+                  {entry.data.projectTagline}
+                </p>
+                <div class="flex flex-wrap gap-3">
+                  <a
+                    href={entry.data.demoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    Live demo
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </a>
+                  <a
+                    href={entry.data.repoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    Source code
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </a>
+                </div>
+                {entry.data.videoEmbedHtml && (
+                  <div class="mt-6">
+                    <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+                      Demo video
+                    </h4>
+                    <div set:html={entry.data.videoEmbedHtml}></div>
+                  </div>
+                )}
+              </div>
+            </li>
+          )
+        })}
+      </ul>
+    )}
+  </BottomLayout>
+</PageLayout>
