@@ -1,66 +1,12 @@
 ---
-import type { GitHubRepoActivity } from "@lib/github"
-import GitHubRepoBlock from "@components/GitHubRepoBlock.astro"
+import GitHubActivityClient from "@components/GitHubActivityClient"
 
 interface Props {
-  repoActivities: GitHubRepoActivity[]
   profileUrl: string
   username: string
 }
 
-const { repoActivities, profileUrl, username } = Astro.props
-const TOP_REPOS = 3
-const topRepos = repoActivities.slice(0, TOP_REPOS)
-const moreRepos = repoActivities.slice(TOP_REPOS)
+const { profileUrl, username } = Astro.props
 ---
 
-<section class="relative w-full max-w-4xl mx-auto px-6 mt-16 z-10">
-  <div class="mb-6 text-center">
-    <h2 class="text-2xl font-bold">Recent GitHub Activity</h2>
-    <p class="text-sm opacity-75 mt-1">What I've been building in the last 2 weeks.</p>
-  </div>
-  {repoActivities.length > 0 ? (
-    <div class="space-y-6">
-      {topRepos.map((repo) => (
-        <GitHubRepoBlock repo={repo} />
-      ))}
-      {moreRepos.length > 0 && (
-        <details class="group">
-          <summary class="cursor-pointer list-none text-center">
-            <span class="inline-flex items-center gap-2 py-2 px-6 rounded-full border border-black/25 dark:border-white/25 hover:bg-black/5 hover:dark:bg-white/15 transition-colors duration-300 text-sm font-medium">
-              See more
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current transition-transform group-open:rotate-180">
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-            </span>
-          </summary>
-          <div class="space-y-6 mt-6">
-            {moreRepos.map((repo) => (
-              <GitHubRepoBlock repo={repo} />
-            ))}
-            <div class="text-center pt-4">
-              <a href={profileUrl} target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 py-2 px-6 rounded-full border border-black/25 dark:border-white/25 hover:bg-black/5 hover:dark:bg-white/15 transition-colors duration-300 text-sm font-medium">
-                View GitHub Profile
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current">
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
-              </a>
-            </div>
-          </div>
-        </details>
-      )}
-      {moreRepos.length === 0 && (
-        <div class="text-center mt-8">
-          <a href={profileUrl} target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 py-2 px-6 rounded-full border border-black/25 dark:border-white/25 hover:bg-black/5 hover:dark:bg-white/15 transition-colors duration-300 text-sm font-medium">
-            View GitHub Profile
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
-          </a>
-        </div>
-      )}
-    </div>
-  ) : (
-    <p class="text-center text-sm opacity-75">No activity by {username} in the last 2 weeks on GitHub.</p>
-  )}
-</section>
+<GitHubActivityClient client:load profileUrl={profileUrl} username={username} />

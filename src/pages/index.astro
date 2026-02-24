@@ -7,7 +7,6 @@ import MeteorShower from "@components/MeteorShower.astro"
 import GitHubActivity from "@components/GitHubActivity.astro"
 import Image from "astro/components/Image.astro"
 import { formatDate } from "@lib/utils"
-import { fetchGitHubActivity } from "@lib/github"
 
 const featuredSlugs = ["call", "memoization-in-react", "auto-sync-github-readme"]
 const allPosts = (await getCollection("blog")).filter(post => !post.data.draft)
@@ -23,7 +22,6 @@ const projects = (await getCollection("projects"))
 const githubSocial = SOCIALS.find(s => s.NAME === "Github")
 const githubUsername = githubSocial?.TEXT ?? "khalatevarun"
 const githubProfileUrl = githubSocial?.HREF ?? `https://github.com/${githubUsername}`
-const repoActivities = await fetchGitHubActivity(githubUsername, 14)
 ---
 
 <PageLayout title="Home" description={SITE.DESCRIPTION}>
@@ -115,7 +113,7 @@ const repoActivities = await fetchGitHubActivity(githubUsername, 14)
   </section>
 
   <!-- RECENT GITHUB ACTIVITY -->
-  <GitHubActivity repoActivities={repoActivities} profileUrl={githubProfileUrl} username={githubUsername} />
+  <GitHubActivity profileUrl={githubProfileUrl} username={githubUsername} />
 
   <!-- FEATURED PROJECTS -->
   <section class="relative w-full max-w-4xl mx-auto px-6 mt-16 z-10">
