@@ -1,11 +1,13 @@
 ---
 title: "Fill-in-the-Middle: How Code Completion Actually Works"
 summary: "I stumbled upon this while inspecting Modal's network tab during a CUDA assignment. Turned out there's a well-known pattern behind it, and it all starts with the API payload."
-date: "Nov 02 2025"
-draft: true
+date: "March 5, 2026"
+draft: false
 tags:
-- tutorial
+- devtools
 ---
+
+> Yes, we're well past code completion. Cursor, Claude Code, etc. reason across entire codebases now. But this space moves fast enough that genuinely interesting ideas get buried before most people understand them. I wanted to slow down and actually learn this one before it fades into background noise.
 
 # Introduction
 
@@ -14,7 +16,7 @@ Code editors we use daily are usually desktop apps. Because of that, it never re
 That changed when I was using [Modal](https://modal.com)'s notebook to work on an assignment for my CUDA course. Unlike a desktop editor, it runs in the browser.
 
 
-> I've been reverse engineering [Modal](https://modal.com)'s UI, UX and architecture for a while now. I study everything they build and try to understand the decisions behind it. When I noticed the autocomplete suggestions working in a way that felt interesting, I did what I always do. I opened the Chrome DevTools network tab.
+> I've been reverse engineering [Modal](https://modal.com)'s UI, UX and architecture for a while now. I study everything they build and try to understand the decisions behind it, from a frontend engineer's perspective. When I noticed the autocomplete suggestions working in a way that felt interesting, I did what I always do. I opened the Chrome DevTools network tab.
 
 # What I Found in the Network Tab
 
@@ -39,9 +41,9 @@ And the response:
 }
 ```
 
-Two fields: `prefix` for everything before the cursor, `suffix` for everything after. At first it seemed weird. Why send the suffix at all?
+Two fields: `prefix` for everything before the cursor, `suffix` for everything after. At first it seemed weird to me. Why send the suffix at all?
 
-After some ChatGPT-ing and Claude-ing I came across the term: **Fill-in-the-Middle (FIM)**.
+After some ChatGPT-ing I came across the term: **Fill-in-the-Middle (FIM)**.
 
 # The FIM Pattern
 
@@ -51,9 +53,11 @@ The standard next-token prediction approach, where you give the model code and i
 
 FIM solves this by giving the model the full picture: what came before, what comes after, fill in what's missing.
 
-After reading more about it I realized it's actually quite a popular protocol. There are models trained specifically for this, like Codex, DeepSeek Coder, Code Llama all support FIM natively. But I wanted to try this with just any general-purpose model, so I built a small demo.
+After reading more about it I realized it's quite a popular protocol. Models like Codex, DeepSeek Coder, and Code Llama all support FIM natively. But I wanted to try this with a general-purpose chat model, so I built a small demo.
 
 # Building the Demo
+
+The [complete source code is here](https://github.com/khalatevarun/valen). I will walk through the core parts of the implementation.
 
 ![Demo](./image.png)
 
@@ -86,7 +90,7 @@ Low temperature because this is code. You want deterministic, not creative.
 
 ### 2. Indicating the Cursor Position
 
-The user message does two things. First, it gives the model the full file context with FIM tags. Then it zooms into the *immediate* context around the cursor, because for large files you want the model focused on the right spot.
+The user message does two things. First, it gives the model the full file context with FIM tags. Then it zooms into the *immediate* context around the cursor. For large files, you want the model focused on the right spot, not reading noise from the top of the file.
 
 ```ts
 function buildUserMessage(prefix: string, suffix: string) {
@@ -105,7 +109,13 @@ The `[CURSOR]` marker makes the insertion point explicit. Without it, the model 
 
 ### 3. The System Prompt
 
-This is where most of the work is. Chat models are trained to be helpful, so without clear instructions, they'll try to complete the entire file, repeat context, add comments, explain themselves. None of that is what you want.
+This is where most of the work is. Chat models are trained to be helpful. Without clear instructions, they will try to complete the entire file, repeat context, add comments, explain themselves. None of that is what you want here.
+
+When writing the prompt I kept three things in mind:
+
+- **Define the role.** Tell the model exactly what it is and what its job is
+- **Give a concrete example.** It removes ambiguity faster than any amount of prose instructions
+- **Constrain the output format.** Instead of markdown code fences (which models sometimes forget or wrap inconsistently), I used a custom XML tag. This is what Anthropic calls [artifacts](https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/use-xml-tags): structured tags that extract a precise piece from the response, no fragile string parsing needed
 
 ```
 You are a TypeScript code completion assistant.
@@ -119,61 +129,79 @@ Rules:
 - If nothing is missing at the cursor, return empty.
 - No completion is often the best choice. Do not force a suggestion.
 - Output ONLY the insertion text, no explanation, no markdown.
+
+Example:
+Input:
+<prefix>const total = items.reduce((sum, item) => sum + </prefix>
+<suffix>, 0)</suffix>
+
+Output:
+<complete>item.price</complete>
+
+Respond with this format only: <complete>insertion text here</complete>
 ```
 
-That last rule, *no completion is often the best choice*, matters a lot. Without it the model tries to suggest something on every pause, even when the cursor is between two tokens that are already complete. You end up with noise.
+That rule *no completion is often the best choice* matters a lot. Without it the model tries to suggest something on every pause, even when the cursor is between two tokens that are already complete. You end up with noise.
 
-### 4. Using Artifacts for Parsing
+### 4. The Bits That Make It Production Ready
 
-Instead of relying on markdown code fences (which models sometimes forget or wrap inconsistently), I defined my own XML tag:
+Two small things that make a big difference in practice.
 
-```
-Respond with this format only:
-<complete>insertion text here</complete>
-```
+**Debounce the API call.** You don't want a request firing on every keystroke. Wait for the user to pause, then fire. I used 300ms.
 
-Parsing becomes trivial:
+**Abort in-flight requests.** If the user types again before the previous request completes, cancel it. Otherwise stale suggestions from three keystrokes ago show up and overwrite fresher ones.
+
+Here is how both fit together. Instead of globals, I wrapped everything in a factory function so the timer and controller are private to each fetcher instance:
 
 ```ts
-function parseCompletion(raw: string): string | null {
-  const match = raw.match(/<complete>([\s\S]*?)<\/complete>/)
-  return match ? match[1].trim() : null
+export function createCompletionFetcher(apiKey: string) {
+  const groq = new Groq({ apiKey, dangerouslyAllowBrowser: true, maxRetries: 0 })
+  let debounceTimer: ReturnType<typeof setTimeout> | null = null
+  let abortController: AbortController | null = null
+
+  return (prefix: string, suffix: string, onResult: (completion: string) => void) => {
+    clearTimeout(debounceTimer ?? undefined)
+    abortController?.abort()
+
+    debounceTimer = setTimeout(async () => {
+      abortController = new AbortController()
+      try {
+        const res = await groq.chat.completions.create(
+          { model: MODEL, messages: [...], max_tokens: 200, temperature: 0.2 },
+          { signal: abortController.signal }
+        )
+        const completion = parseCompletion(res.choices[0]?.message?.content ?? '')
+        if (completion) onResult(completion)
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') console.error(err)
+      }
+    }, DEBOUNCE_MS)
+  }
 }
 ```
 
-If the tag is missing, you get null. If it's empty (`<complete></complete>`), you get an empty string, which means no suggestion. Clean, deterministic, no fragile string parsing.
-
-This is what Anthropic calls **artifacts**. They use structured XML tags to extract specific pieces from a model response. This is particularly useful when you want a single precise output rather than prose.
-
-### 5. Debouncing and Aborting In-flight Requests
-
-Two things that matter a lot in practice:
-
-**Debounce the API call.** You don't want a request firing on every keystroke. I debounce by 300ms, so the model only gets called after the user pauses.
-
-**Abort in-flight requests.** If the user types something new before the previous request completes, cancel it. Otherwise you get stale suggestions showing up out of order.
-
-```ts
-let controller: AbortController | null = null
-
-function fetchCompletion(prefix: string, suffix: string) {
-  if (controller) controller.abort()
-  controller = new AbortController()
-
-  return fetch('/api/complete', {
-    method: 'POST',
-    signal: controller.signal,
-    body: JSON.stringify({ prefix, suffix })
-  })
-}
-```
-
-Without abort logic, a slow request from three keystrokes ago can overwrite a fresher suggestion. It's a small thing but it makes the experience noticeably cleaner.
+`createCompletionFetcher` is called once, and the returned function is what you use on every keystroke. The timer and controller live inside the closure, so there are no globals and no state leaking out.
 
 # Conclusion
 
-The interesting thing about FIM isn't the model, it's the protocol. What makes code completion feel magical is **how you frame the problem**: splitting the document at the cursor, packaging both halves as context, constraining the output format so the insertion is always precise.
+The interesting thing about FIM is not the model, it is the protocol. What makes code completion feel magical is **how you frame the problem**: split the document at the cursor, package both halves as context, constrain the output format so the insertion is always precise.
 
-You could apply this with any capable LLM. The model doesn't need a special FIM fine-tune. It just needs a clear contract: here is what came before, here is what comes after, give me only what's missing.
+You can apply this with any capable LLM. The model does not need a special FIM fine-tune. It just needs a clear contract: here is what came before, here is what comes after, give me only what is missing.
 
 That's it for this one, see you in the next one :)
+
+---
+
+# Dive Deeper
+
+If you wish to go into this rabbit hole, here are some interesting links:
+
+- **[How GitHub Copilot is getting better at understanding your code](https://github.blog/ai-and-ml/github-copilot/how-github-copilot-is-getting-better-at-understanding-your-code/)** They reported a 10% relative boost in suggestion acceptance just from adopting FIM.
+
+- **[Codestral by Mistral](https://mistral.ai/news/codestral/)** Mistral's 22B model built specifically for code, with first-class FIM support across 80+ languages. Good look at what a production FIM model actually looks like.
+
+- **[Hard Problems in AI Coding Tools (Cursor, 2024)](https://cursor.com/blog/problems-2024)** Just hit Tab and the cursor moves across files, editor, terminal. No friction, stupid low latency. One of the most impressive ideas I've come across in this space.
+
+
+
+
