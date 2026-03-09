@@ -61,7 +61,7 @@ The [complete source code is here](https://github.com/khalatevarun/valen). I wil
 
 ![Demo](./image.png)
 
-The goal wasn't a polished UI. It was to understand the API payload and protocol. A textarea, a panel on the right showing suggestions, Tab to accept, Esc to dismiss. That's it for the UI. The interesting parts are everything else.
+The goal was to understand the API payload and protocol, how to form it correctly on every user input, and how to handle the response. A full-width code editor, and when a suggestion is ready it floats up as a toast at the bottom with Tab to accept and Esc to dismiss. That's it for the UI. The interesting parts are everything else.
 
 ### 1. The API Payload
 
@@ -147,7 +147,7 @@ That rule *no completion is often the best choice* matters a lot. Without it the
 
 Two small things that make a big difference in practice.
 
-**Debounce the API call.** You don't want a request firing on every keystroke. Wait for the user to pause, then fire. I used 300ms.
+**Debounce the API call.** Fire only after the user pauses. I used 300ms.
 
 **Abort in-flight requests.** If the user types again before the previous request completes, cancel it. Otherwise stale suggestions from three keystrokes ago show up and overwrite fresher ones.
 
