@@ -36,7 +36,19 @@ export default function GitHubActivityClient({ username, profileUrl }: Props) {
   return (
     <section class="relative w-full max-w-4xl mx-auto px-6 mt-16 z-10">
       <div class="mb-6 text-center">
-        <h2 class="text-2xl font-bold">Recent GitHub Activity</h2>
+        <h2 class="text-2xl font-bold">
+          <a
+            href={profileUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center gap-1.5 hover:underline"
+          >
+            Recent GitHub Activity
+            <svg class="size-4 opacity-70" aria-hidden>
+              <use href="/social.svg#github" class="fill-current" />
+            </svg>
+          </a>
+        </h2>
         <p class="text-sm opacity-75 mt-1">
           What I've been building in the last 2 weeks.
         </p>

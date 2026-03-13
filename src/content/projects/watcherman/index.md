@@ -1,13 +1,11 @@
 ---
 title: "Watcherman"
 summary: "A real-time website monitoring dashboard built with Next.js, NodeJS and Supabase. Track uptime, latency, and performance metrics for multiple websites with customizable monitoring intervals and data visualization."
-date: "15 Nov 2022"
+date: "10 Nov 2024"
 draft: false
 tags:
-- Reactjs
-- Tailwind
-- Nodejs
-- PostgreSQL
+- React
+- Node.js
 
 demoUrl: https://watcherman.vercel.app
 repoUrl: https://github.com/khalatevarun/watcherman
