@@ -13,6 +13,24 @@ export default {
         DEFAULT: {
           css: {
             maxWidth: "full",
+            code: {
+              backgroundColor: "#f3f4f6",
+              borderRadius: "0.25rem",
+              paddingTop: "0.125rem",
+              paddingBottom: "0.125rem",
+              paddingLeft: "0.375rem",
+              paddingRight: "0.375rem",
+              fontWeight: "500",
+            },
+            "code::before": { content: '""' },
+            "code::after": { content: '""' },
+          },
+        },
+        invert: {
+          css: {
+            code: {
+              backgroundColor: "#1f2937",
+            },
           },
         },
       },

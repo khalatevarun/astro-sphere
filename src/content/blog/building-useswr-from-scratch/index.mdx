@@ -1,0 +1,480 @@
+---
+title: "SWR and Viewport Guarding: efficient data fetching without the complexity"
+summary: "What SWR is, why it sidesteps global state complexity, and how I built useSWR and useInViewport from scratch, inspired by a beautifully minimal implementation I found in Modal's dashboard source."
+date: "Mar 29 2026"
+draft: false
+tags:
+- react
+---
+
+# Introduction
+
+I built this after stumbling on something interesting while using [Modal](https://modal.com)'s dashboard at a hackathon. The data fetching felt unusually smooth, so I opened DevTools. Modal had source maps enabled, so instead of minified code I could read the actual client-side source. There is even a [Chrome extension](https://chromewebstore.google.com/detail/save-all-resources/abpdnfjocnmdomablahdcfnoggeeiedb) that downloads the whole thing with the folder structure intact.
+
+Almost every API call routed through one custom Svelte file: `swr.ts`. About 300 lines, no library, no abstraction overhead. Just enough to handle polling, revalidation, and deduplication across the entire dashboard.
+
+Their implementation was in Svelte. I wanted to rebuild it in React to test whether I actually understood it.
+
+## What is SWR?
+
+SWR stands for **stale-while-revalidate**, an HTTP cache strategy that says: return cached data immediately (stale), then fetch fresh data in the background (revalidate). The result is a UI that feels instant because something is always on screen, while still staying up to date.
+
+Beyond the caching strategy, the SWR pattern shifts *where* data fetching lives. Instead of each component managing its own `fetch` call and loading state, a shared cache outside the framework holds the data and the fetch lifecycle. Components subscribe to a key (typically a URL) and react to updates. They don't own the request.
+
+This has a compounding benefit: **you rarely need a global state management library for server data**. Redux, Zustand, Jotai: these are often reached for just to share fetched data between components without prop drilling. SWR makes that unnecessary. The cache is the source of truth, components subscribe directly, and sibling components that need the same data share one request automatically. No store setup, no actions, no selectors. Just a key and a hook.
+
+## What is Viewport Guarding?
+
+There is no single official term for this. You might see it called viewport-aware fetching, visibility-based data loading, or just lazy fetching. The idea is simple though: not every component rendered in the DOM is actually visible to the user at any given moment.
+
+Think about a dashboard with a long list of rows. All of them are mounted. All of them are subscribed to an API. But the user is only looking at the first ten. The rest are off screen. Polling all of them is wasteful, and in a dashboard with hundreds of rows it becomes a real problem.
+
+Viewport guarding solves this by making the fetch conditional on visibility. A component that is off screen does not fetch. When it scrolls into view, it starts fetching. When it scrolls back out, it stops.
+
+## Two hooks, one goal
+
+This post covers two hooks:
+
+- **`useSWR`**: the data-fetching layer. Shared cache, deduplication, polling, revalidation on focus and reconnect, cache eviction, and optimistic updates via `mutate`.
+- **`useInViewport`**: the visibility layer. Uses a shared `IntersectionObserver` to tell a component whether it's currently on screen. Paired with `useSWR`, it gates API calls to only what's visible. When a component scrolls off screen, polling stops and any in-flight request is aborted.
+
+Together they cover the full picture of efficient data fetching in a dashboard: fetch smart, share results, and don't waste a single request on something the user can't see.
+
+[Vercel's SWR library](https://swr.vercel.app/) does all of this and more. But seeing a minimal implementation that was exactly what one production product needed, nothing extra, made me want to understand it from the ground up. So I built my own version. About 250 lines, no external dependencies.
+
+## Demo
+
+- [Source code on GitHub](https://github.com/khalatevarun/swr-demo) (both hooks implemented on a simple weather dashboard)
+- [useSWR hook gist](https://gist.github.com/khalatevarun/a3bfae83072585d061f80963d9ea47ac)
+
+Walkthrough demonstrating deduplication, viewport guarding, stale-while-revalidate, and revalidation on focus and reconnect (recommend 1.5x):
+
+<iframe
+  src="https://www.youtube.com/embed/Sc2MheOkmro"
+  style={{ width: "100%", height: "400px", border: 0, borderRadius: "4px" }}
+  title="useSWR + useInViewport demo walkthrough"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+  allowFullScreen
+/>
+
+The rest of this post is the story of how I got here.
+
+---
+
+# Starting Simple
+
+I started the way anyone would. One component, one `useEffect`, local state:
+
+```tsx
+function WeatherCard({ city }) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setLoading(true);
+    fetch(`/api/weather?city=${city}`)
+      .then(res => res.json())
+      .then(data => { setData(data); setLoading(false); });
+  }, [city]);
+
+  return <div>{loading ? "Loading..." : data?.temp}</div>;
+}
+```
+
+This works fine for a single card. Two `<WeatherCard city="Chicago" />` components side by side produce two identical requests. Add polling and you get competing intervals. Navigate away and you get a state update on an unmounted component.
+
+The core issue: **each component owns its own fetch lifecycle**. Two components that want the same data have no way to coordinate. The fix is moving that lifecycle outside of any individual component.
+
+---
+
+# Shared Store
+
+If data for a URL is shared state, the place to put it is outside React entirely. Module-level singletons, alive for the lifetime of the page:
+
+```ts
+// single cache store, shared across all components
+const store = new Map<string, StoreEntry>();
+
+// tracks in-flight requests and their abort controllers
+const requestState = new Map<string, RequestState>();
+```
+
+Every `useSWR` call reads from and writes to the same two maps. The guiding question from here: *what does one component's action do to all other components sharing the same key?* The cache is shared, the fetch is shared, the error is shared.
+
+```ts
+type StoreEntry = {
+  data: any | null;
+  error: Error | null;
+  lastFetched: number | null;
+  isValidating: boolean;
+  listeners: Set<() => void>;
+  referenceCount: number;
+  droppedAt: number | null;
+};
+```
+
+`listeners` is a Set of callbacks, one per mounted component subscribed to a URL. When data changes, iterating `listeners` and calling each one triggers re-renders. `referenceCount` tracks how many components are currently subscribed. `droppedAt` records when the last subscriber unmounted. That timestamp becomes important later.
+
+One immediate problem: how does React know when to re-render? The store is outside React. Writing to a `Map` doesn't trigger anything.
+
+---
+
+# Pub/Sub and useSyncExternalStore
+
+The answer is pub/sub. Each component registers a callback in the `listeners` Set when it subscribes. When data arrives, `notify()` calls all of them:
+
+```ts
+const notify = (key: string) => {
+  store.get(key)?.listeners.forEach(fn => fn());
+};
+```
+
+That worked. Components updated when new data arrived. But a few navigations in, I saw two components showing different temperatures in the same render, both reading from the same cache entry.
+
+This is ***tearing***. React 18's ***concurrent mode*** lets React pause and resume rendering mid-tree, interleaving work across components. Each component reading from the shared store does so at its own point in the scheduler's timeline. If the store updates between two reads in the same render pass, the components see different values in the same committed frame.
+
+`useSyncExternalStore` was introduced in React 18 to fix exactly this. Before React commits anything to the DOM, it calls `getSnapshot` for every subscriber and checks that all reads are consistent. If the store changed between reads, React discards the work and re-renders synchronously. A frame where two components show torn state cannot be committed.
+
+Here is how the hook uses it:
+
+```ts
+const { data, error, lastFetched, isValidating } = useSyncExternalStore(
+  subscribeToKey,        // (onStoreChange: () => void) => unsubscribe
+  () => getSnapshot(activeKey)
+);
+```
+
+`subscribeToKey` registers the callback and returns cleanup. `getSnapshot` returns the current store value synchronously. React re-renders whenever `onStoreChange` fires and the snapshot has changed.
+
+```ts
+const subscribe = (key: string | null, fn: () => void) => {
+  if (!key) return () => {};
+
+  const existing = store.get(key);
+  if (!existing) {
+    store.set(key, {
+      ...EMPTY_STATE,
+      referenceCount: 1,
+      droppedAt: null,
+      listeners: new Set([fn]),
+    });
+  } else {
+    existing.listeners.add(fn);
+    store.set(key, {
+      ...existing,
+      referenceCount: existing.referenceCount + 1,
+      droppedAt: null,
+    });
+  }
+
+  return () => {
+    const entry = store.get(key);
+    if (entry) {
+      entry.listeners.delete(fn);
+      const newCount = entry.referenceCount - 1;
+      store.set(key, {
+        ...entry,
+        referenceCount: newCount,
+        droppedAt: newCount === 0 ? Date.now() : null,
+      });
+    }
+  };
+};
+```
+
+When the last subscriber unmounts (`referenceCount === 0`), we record `droppedAt` rather than deleting the entry immediately. If the component remounts quickly, the stale data is still there for an instant render. The eviction sweeper handles cleanup later.
+
+---
+
+# Deduplication
+
+Shared store solved shared data. But I was still firing duplicate requests.
+
+Two components mounting at the same time both call `fetchData`. Without coordination, both fire a fetch for the same URL. The fix: a second module-level map, `requestState`, that tracks in-flight requests. The first component enters, creates an entry, fires the fetch. The second hits `requestState.has(key)` and returns early.
+
+```ts
+const fetchData = (key: string, force = false, priority: RequestPriority = 'auto', previousData: any = null) => {
+  if (!key) return;
+
+  const entry = store.get(key);
+
+  // no subscribers, nothing to update
+  if (!force && (!entry || entry.referenceCount === 0)) return;
+
+  // request already in flight, deduplicate
+  if (!force && requestState.has(key)) return;
+
+  const abortController = new AbortController();
+  requestState.get(key)?.abortController.abort();
+
+  // ...
+};
+```
+
+The `AbortController` is created in the outer scope and captured inside the `.then()` and `.finally()` closures:
+
+```ts
+const promise = fetch(key, { signal: abortController.signal, priority })
+  .then(res => res.json())
+  .then(data => {
+    const entry = store.get(key);
+    if (entry) {
+      store.set(key, { ...entry, data, error: null, lastFetched: Date.now(), isValidating: false });
+    }
+  })
+  .catch(error => {
+    const entry = store.get(key);
+    if (!entry) return;
+    if (error.name === "AbortError") {
+      store.set(key, { ...entry, isValidating: false });
+    } else {
+      if (previousData) {
+        store.set(key, { ...entry, data: previousData, error, isValidating: false });
+      } else {
+        store.set(key, { ...entry, error, isValidating: false });
+      }
+    }
+  })
+  .finally(() => {
+    const current = requestState.get(key);
+    if (current?.promise === promise) {
+      requestState.delete(key);
+    }
+    notify(key);
+  });
+
+requestState.set(key, { promise, abortController });
+```
+
+The `finally` check `current?.promise === promise` matters: if a force-fetch was triggered while the original was still running, the old promise's `finally` finds a different promise in `requestState` and skips the delete. Cleanup belongs to whoever is current.
+
+---
+
+# Polling and the Priority Question
+
+Adding polling was straightforward: a `setInterval` inside `useEffect` that calls `fetchData` on a timer. But it raised an interesting question about fetch priority.
+
+The [Fetch Priority API](https://developer.mozilla.org/en-US/docs/Web/API/Request/priority) lets you hint to the browser's scheduler how important a request is. Modal uses `priority: 'low'` on all SWR-initiated fetches, which makes sense for background polls. You don't want them competing with navigation bundle downloads.
+
+I was curious whether the initial mount fetch should be treated the same way. That first fetch is blocking the user's first render. It felt like it should be treated as more urgent than a background poll. So I kept `'auto'` for the initial fetch and only gave polling `'low'`:
+
+```ts
+useEffect(() => {
+  if (!activeKey) return;
+  let interval: number | undefined;
+
+  const { revalidateInterval, refreshInterval, revalidateOnFocus, revalidateOnReconnect } = activeOptions ?? {};
+  const revalidate = revalidateInterval ?? Infinity;
+  const entry = store.get(activeKey);
+  const isStale = !entry || (entry.lastFetched !== null && Date.now() - entry.lastFetched >= revalidate);
+
+  if (!entry || entry.lastFetched === null || isStale) {
+    fetchData(activeKey); // initial fetch, priority: 'auto'
+  }
+
+  if (refreshInterval) {
+    interval = setInterval(() => {
+      fetchData(activeKey, false, "low"); // polling, priority: 'low'
+    }, refreshInterval);
+  }
+
+  const onFocus = () => { if (document.visibilityState === 'visible') fetchData(activeKey); };
+  const onOnline = () => fetchData(activeKey);
+
+  if (revalidateOnReconnect) window.addEventListener("online", onOnline);
+  if (revalidateOnFocus) window.addEventListener("visibilitychange", onFocus);
+
+  return () => {
+    clearInterval(interval);
+    window.removeEventListener('visibilitychange', onFocus);
+    window.removeEventListener('online', onOnline);
+  };
+}, [activeKey, activeOptions?.revalidateInterval, activeOptions?.refreshInterval]);
+```
+
+---
+
+# Viewport Guarding in Practice
+
+With the weather dashboard demo running (a long list of cities, each polling every 6 seconds), I opened the network tab and saw requests firing for rows far below the fold. The browser was polling the entire list.
+
+Consider 250 rows at 6-second intervals. Without any gating, that's roughly 83 requests per second. With only the visible rows active (typically 5 to 10), it drops to 2 or 3. The difference compounds fast.
+
+The fix is making the fetch conditional on visibility. A `useInViewport` hook watches each row and returns whether it's on screen. When it's not, the URL passed to `useSWR` becomes `null`. The `subscribe` function short-circuits on `null` and returns a no-op. The `referenceCount === 0` guard in `fetchData` stops the next poll tick. If a request was already in-flight, the `useEffect` cleanup aborts it.
+
+Here's the full `useInViewport` hook:
+
+```ts
+import { useEffect, useState } from "react";
+
+const elementCallbacks = new Map<HTMLElement, (isInViewport: boolean) => void>();
+let sharedObserver: IntersectionObserver | undefined;
+
+function getObserver(): IntersectionObserver {
+  if (!sharedObserver) {
+    sharedObserver = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const callback = elementCallbacks.get(entry.target as HTMLElement);
+          if (callback) callback(entry.isIntersecting);
+        }
+      },
+      { rootMargin: "30px 0px" }
+    );
+  }
+  return sharedObserver!;
+}
+
+const useInViewport = (ref: React.RefObject<HTMLElement | null>) => {
+  const [isInView, setIsInView] = useState(false);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    if (!elementCallbacks.has(element)) {
+      elementCallbacks.set(element, (isInViewport) => {
+        setIsInView(isInViewport);
+      });
+    }
+    const observer = getObserver();
+    observer.observe(element);
+    return () => {
+      observer.unobserve(element);
+      elementCallbacks.delete(element);
+    };
+  }, []);
+
+  return isInView;
+};
+
+export default useInViewport;
+```
+
+One observer instance for all elements. The `rootMargin: "30px 0px"` starts firing 30px before a row enters the viewport, so the fetch is already in flight by the time the user actually sees it.
+
+The connection to `useSWR`:
+
+```tsx
+function WeatherRow({ city }: { city: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const isInViewport = useInViewport(ref);
+
+  const { data, isValidating } = useSWR(
+    isInViewport ? `/api/weather?city=${city}` : null,
+    { refreshInterval: 5000 }
+  );
+
+  return (
+    <div ref={ref}>
+      {isValidating && <Spinner />}
+      {data ? <WeatherDisplay data={data} /> : <Skeleton />}
+    </div>
+  );
+}
+```
+
+When the row scrolls back into view, `useSWR` re-subscribes, checks staleness, and fetches if needed. The row still shows its last known data while the fresh request runs, so there's no flash of empty content.
+
+---
+
+# Cache Eviction
+
+After the demo was working, I opened the Chrome memory profiler and noticed the cache `Map` was growing with every endpoint I visited. Module-level singletons don't clean themselves up. A long session on a dashboard with many unique endpoints means the cache grows without bound.
+
+The fix is a periodic sweeper:
+
+```ts
+const INTERVAL = 60_000;            // sweep every 1 minute
+const EXPIRATION_TIME = 5 * 60_000; // evict after 5 minutes with no subscribers
+
+window.setInterval(() => {
+  const keysToDelete: string[] = [];
+  store.forEach((entry, key) => {
+    if (
+      entry.referenceCount === 0 &&
+      entry.droppedAt !== null &&
+      Date.now() - entry.droppedAt > EXPIRATION_TIME
+    ) {
+      keysToDelete.push(key);
+    }
+  });
+
+  keysToDelete.forEach(key => {
+    requestState.get(key)?.abortController.abort();
+    requestState.delete(key);
+    store.delete(key);
+  });
+}, INTERVAL);
+```
+
+An entry is only evicted when it has no active subscribers *and* has been subscriber-free for longer than 5 minutes. This is where `droppedAt` comes in. When the last subscriber unmounts, we stamp the timestamp instead of immediately deleting. A user who navigates away and returns within 5 minutes gets instant stale data from cache rather than a loading state. Beyond that window, the memory is reclaimed.
+
+---
+
+# Two Other Changes
+
+**Poll failure should not flash empty.** The first version set `data` to `null` on any error. A single network hiccup caused every subscribed component to flash empty until the next successful fetch. The fix: capture the current value before the request fires and restore it on error:
+
+```ts
+.catch(error => {
+  if (error.name === "AbortError") {
+    store.set(key, { ...entry, isValidating: false });
+  } else {
+    if (previousData) {
+      store.set(key, { ...entry, data: previousData, error, isValidating: false });
+    } else {
+      store.set(key, { ...entry, error, isValidating: false });
+    }
+  }
+})
+```
+
+**Event listeners belong in `useEffect`.** The first version attached `visibilitychange` and `online` listeners at module level. They ran always, even when no component had opted in. Moving them into `useEffect` ties their lifetime to the component: added when the option is set, removed on unmount, each handler closing over `activeKey` so it only revalidates its own key.
+
+---
+
+# The Result
+
+All of this together in a real usage:
+
+```tsx
+// AllCities:polling + viewport guarding
+function CityRow({ city }) {
+  const ref = useRef(null);
+  const isInViewport = useInViewport(ref);
+  const { data, isValidating } = useSWR(
+    isInViewport ? `/api/weather?city=${city}` : null,
+    { refreshInterval: 5000, revalidateInterval: 10000 }
+  );
+  return <div ref={ref}>{/* ... */}</div>;
+}
+
+// FavoriteCities:revalidate on tab focus / network reconnect
+function FavoriteCard({ city }) {
+  const { data } = useSWR(`/api/weather?city=${city}`, {
+    revalidateOnFocus: true,
+    revalidateOnReconnect: true,
+  });
+  return <div>{/* ... */}</div>;
+}
+```
+
+Three components consuming `/api/weather?city=Chicago` share one cache entry and produce one network request. Stale data renders instantly on remount. Polling stops when rows scroll off screen. A failed poll does not wipe the display. Cache entries expire 5 minutes after the last subscriber unmounts.
+
+---
+
+# Conclusion
+
+I built this to test whether I actually understood what I had read. Rebuilding in a different framework forces you to make every decision explicitly. Nothing transfers automatically. Every pattern has to be understood well enough to translate, which means understanding why it was designed that way.
+
+That's it for this one, see you in the next one :)
+
+---
+
+# Dive Deeper
+
+- **[SWR by Vercel](https://swr.vercel.app/)**:The production-grade library. Read the source alongside this post, the architecture maps closely.
+- **[useSyncExternalStore:React docs](https://react.dev/reference/react/useSyncExternalStore)**:The hook that makes external stores tearing-free in concurrent React.
+- **[Fetch Priority API:MDN](https://developer.mozilla.org/en-US/docs/Web/API/Request/priority)**:How browsers schedule requests and why `priority: 'low'` is the right hint for background polling.
+- **[IntersectionObserver:MDN](https://developer.mozilla.org/en-US/docs/Web/API/IntersectionObserver)**:The API behind `useInViewport`. The shared observer pattern scales to hundreds of elements with one observer instance.
+- **[Save All Resources](https://chromewebstore.google.com/detail/save-all-resources/abpdnfjocnmdomablahdcfnoggeeiedb)**:The Chrome extension that downloads a site's entire client-side source with the folder structure intact, source maps and all.
