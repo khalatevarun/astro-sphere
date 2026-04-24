@@ -37,9 +37,9 @@ export const HACKATHONS: Page = {
   DESCRIPTION: "Hackathons I've participated in and my submission demos.",
 }
 
-// Proof of Work Page
+// Case Study Page
 export const PROOFOFWORK: Page = {
-  TITLE: "Proof of Work",
+  TITLE: "Case Study",
   DESCRIPTION: "Whenever I come across a client-heavy product, I open DevTools. These are the times I found something peculiar.",
 }
 
@@ -61,8 +61,8 @@ export const LINKS: Links = [
     HREF: "/opensource",
   },
   {
-    TEXT: "Proof of Work",
-    HREF: "/proof-of-work",
+    TEXT: "Case Study",
+    HREF: "/case-study",
   },
   { 
     TEXT: "Projects", 
