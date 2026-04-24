@@ -75,4 +75,17 @@ const hackathons = defineCollection({
   }),
 })
 
-export const collections = { work, blog, projects, legal, opensource, hackathons }
+const casestudies = defineCollection({
+  type: "content",
+  schema: z.object({
+    company: z.string(),
+    domain: z.string(),
+    title: z.string(),
+    highlight: z.string(),
+    date: z.coerce.date(),
+    notionUrl: z.string().url(),
+    draft: z.boolean().optional(),
+  }),
+})
+
+export const collections = { work, blog, projects, legal, opensource, hackathons, casestudies }

@@ -37,6 +37,12 @@ export const HACKATHONS: Page = {
   DESCRIPTION: "Hackathons I've participated in and my submission demos.",
 }
 
+// Proof of Work Page
+export const PROOFOFWORK: Page = {
+  TITLE: "Proof of Work",
+  DESCRIPTION: "Whenever I come across a client-heavy product, I open DevTools. These are the times I found something peculiar.",
+}
+
 // Search Page
 export const SEARCH: Page = {
   TITLE: "Search",
@@ -50,9 +56,13 @@ export const LINKS: Links = [
     TEXT: "Home", 
     HREF: "/", 
   },
-  { 
-    TEXT: "Open Source", 
-    HREF: "/opensource", 
+  {
+    TEXT: "Open Source",
+    HREF: "/opensource",
+  },
+  {
+    TEXT: "Proof of Work",
+    HREF: "/proof-of-work",
   },
   { 
     TEXT: "Projects", 

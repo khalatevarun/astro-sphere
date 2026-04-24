@@ -5,6 +5,7 @@ import { SITE, SOCIALS } from "@consts";
 import TwinklingStars from "@components/TwinklingStars.astro";
 import MeteorShower from "@components/MeteorShower.astro";
 import GitHubActivity from "@components/GitHubActivity.astro";
+import CaseStudyCard from "@components/CaseStudyCard.astro";
 import Image from "astro/components/Image.astro";
 import { formatDate } from "@lib/utils";
 
@@ -29,6 +30,10 @@ const githubSocial = SOCIALS.find((s) => s.NAME === "Github");
 const githubUsername = githubSocial?.TEXT ?? "khalatevarun";
 const githubProfileUrl =
   githubSocial?.HREF ?? `https://github.com/${githubUsername}`;
+
+const casestudies = (await getCollection("casestudies"))
+  .filter((e) => !e.data.draft)
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
 ---
 
 <PageLayout title="Home" description={SITE.DESCRIPTION}>
@@ -121,6 +126,12 @@ const githubProfileUrl =
               class="flex flex-wrap gap-2 justify-center mt-1 text-[11px] md:text-xs lg:text-sm"
             >
               <a
+                href="/proof-of-work"
+                class="py-1.5 px-3 truncate rounded-full border border-black/20 dark:border-white/20 bg-black/5 dark:bg-white/10 hover:bg-black/10 hover:dark:bg-white/20"
+              >
+                Proof of Work
+              </a>
+              <a
                 href="/opensource"
                 class="py-1.5 px-3 truncate rounded-full border border-black/20 dark:border-white/20 bg-black/5 dark:bg-white/10 hover:bg-black/10 hover:dark:bg-white/20"
               >
@@ -159,6 +170,40 @@ const githubProfileUrl =
 
   <!-- RECENT GITHUB ACTIVITY -->
   <GitHubActivity profileUrl={githubProfileUrl} username={githubUsername} />
+
+  <!-- PROOF OF WORK -->
+  <section class="relative w-full max-w-4xl mx-auto px-6 mt-16 z-10">
+    <div class="mb-6 text-center">
+      <h2 class="text-2xl font-bold">Proof of Work</h2>
+      <p class="text-sm opacity-75 mt-1">
+        Whenever I come across a client-heavy product, I open DevTools. These are the times I found something peculiar.
+      </p>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {casestudies.map((entry) => <CaseStudyCard entry={entry} />)}
+    </div>
+    <div class="text-center mt-8">
+      <a
+        href="/proof-of-work"
+        class="inline-flex items-center gap-2 py-2 px-6 rounded-full border border-black/25 dark:border-white/25 hover:bg-black/5 hover:dark:bg-white/15 transition-colors duration-300 text-sm font-medium"
+      >
+        See all
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="stroke-current"
+        >
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </a>
+    </div>
+  </section>
 
   <!-- FEATURED PROJECTS -->
   <section class="relative w-full max-w-4xl mx-auto px-6 mt-16 z-10">

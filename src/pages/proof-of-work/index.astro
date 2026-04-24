@@ -1,0 +1,49 @@
+---
+import { getCollection } from "astro:content";
+import PageLayout from "@layouts/PageLayout.astro";
+import TopLayout from "@layouts/TopLayout.astro";
+import BottomLayout from "@layouts/BottomLayout.astro";
+import CaseStudyCard from "@components/CaseStudyCard.astro";
+import { PROOFOFWORK } from "@consts";
+
+const casestudies = (await getCollection("casestudies"))
+  .filter((e) => !e.data.draft)
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+---
+
+<PageLayout title={PROOFOFWORK.TITLE} description={PROOFOFWORK.DESCRIPTION}>
+  <TopLayout>
+    <div class="animate page-heading">
+      {PROOFOFWORK.TITLE}
+    </div>
+  </TopLayout>
+  <BottomLayout>
+    <div class="animate text-gray-600 dark:text-gray-400 mb-10 space-y-4">
+      <p>
+        Whenever I come across a thick client (read this term <a
+          href="https://www.yangshuntay.com/blog/work-on-the-right-product"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="underline underline-offset-2 hover:text-black dark:hover:text-white transition-colors"
+          >here</a
+        >), I spend time with it in DevTools, no particular agenda, just trying
+        to understand how it is built from the outside.
+      </p>
+      <p>
+        The things I usually try to get a read on are what framework the product
+        is built on, whether it is a SPA or SSR or some combination of the two,
+        how long lists are rendered, how sockets are structured, how they handle
+        pagination or infinite scrolling, and what the payloads and response
+        structures look like.
+      </p>
+      <p>
+        Sometimes DevTools shows you something peculiar and the investigation
+        takes on a life of its own. The following are the two times that
+        happened.
+      </p>
+    </div>
+    <div class="animate grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {casestudies.map((entry) => <CaseStudyCard entry={entry} />)}
+    </div>
+  </BottomLayout>
+</PageLayout>
