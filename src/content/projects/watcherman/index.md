@@ -4,8 +4,7 @@ summary: "A real-time website monitoring dashboard built with Next.js, NodeJS an
 date: "10 Nov 2024"
 draft: false
 tags:
-- React
-- Node.js
+- react
 
 demoUrl: https://watcherman.vercel.app
 repoUrl: https://github.com/khalatevarun/watcherman

@@ -4,7 +4,7 @@ summary: "This is an attempt to give you a step by step tutorial to handle user 
 date: "Sep 13 2021"
 draft: false
 tags:
-- reactjs
+- react
 - tutorial
 ---
 
