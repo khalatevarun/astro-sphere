@@ -1,0 +1,101 @@
+---
+title: "Buildman"
+summary: "An AI app builder that spins up isolated cloud VMs per user, runs a coding agent inside, and streams a live preview to the browser."
+date: "May 20 2025"
+draft: false
+tags:
+  - ai
+  - cloud
+demoUrl: https://buildman-ai.vercel.app
+repoUrl: https://github.com/khalatevarun/buildman
+---
+
+## Demo
+
+<blockquote class="twitter-tweet" data-media-max-width="560"><p lang="en" dir="ltr">Had free Modal credits from a hackathon and wanted to build something in the &quot;coding agents in sandbox&quot; space so i plugged <a href="https://twitter.com/modal_labs?ref_src=twsrc%5Etfw">@modal</a> sandboxes with <a href="https://twitter.com/opencode_ai?ref_src=twsrc%5Etfw">@opencode</a> headless server, added Git for version checkpoints and <a href="https://twitter.com/Netlify?ref_src=twsrc%5Etfw">@Netlify</a> for deploys and built what i call &quot;Buildman - Yet Another AI App Builder&quot;</p>&mdash; Varun Khalate (@varunhnk) <a href="https://twitter.com/varunhnk/status/2062220621451256118?ref_src=twsrc%5Etfw">2026</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+## Features
+
+- **Live preview** renders your app in an iframe and updates as the agent edits files
+- **Chat to iterate** lets you refine the app with follow-up prompts in plain English
+- **Prompt queue** accepts new requests while the agent is still working and runs them in order
+- **Version history** creates a git checkpoint after every completed task so you can jump back to any point or stop a run mid-execution
+- **One-click deploy** publishes to a live Netlify URL; each project gets its own dedicated site
+- **Starter template** gives every project a production-ready React + Vite + Tailwind base baked into the sandbox image
+
+## Architecture
+
+![Buildman architecture diagram](https://mermaid.ink/img/Zmxvd2NoYXJ0IFRECiAgICBCcm93c2VyWyJCcm93c2VyClJlYWN0IFJlZHV4IENsZXJrIl0KICAgIEFQSVsiRmFzdEFQSQpNb2RhbCBhbHdheXMtd2FybSJdCiAgICBQb29sWyJTYW5kYm94IFBvb2wKcHJlLXdhcm1lZCBWTXMgTW9kYWwgUXVldWUiXQogICAgU2FuZGJveFsiTW9kYWwgU2FuZGJveCBWTQpEZWJpYW4gTm9kZSAyMCBlcGhlbWVyYWwiXQogICAgQWdlbnRbImFnZW50LXNlcnZlci5qcwpFeHByZXNzIHBvcnQgMzAwMSJdCiAgICBPcGVuY29kZVsib3BlbmNvZGUtYWkKZGVlcHNlZWstdjMtMDMyNCJdCiAgICBXb3Jrc3BhY2VbIi93b3Jrc3BhY2UKVml0ZSBwcm9qZWN0Il0KICAgIFZpdGVbIlZpdGUgZGV2IHNlcnZlcgpwb3J0IDUxNzMiXQogICAgU25hcHNob3RbIk1vZGFsIEltYWdlIFNuYXBzaG90CnBlciBwcm9qZWN0IG9uIHNlc3Npb24gZW5kIl0KICAgIE5ldGxpZnlbIk5ldGxpZnkKbGl2ZSBkZXBsb3kiXQoKICAgIEJyb3dzZXIgLS0gInByb21wdCArIENsZXJrIEpXVCIgLS0-IEFQSQogICAgQVBJIC0tICJTU0UgcGhhc2VzICsgZG9uZSIgLS0-IEJyb3dzZXIKICAgIEFQSSAtLSAiY2xhaW0gb3Igc3Bhd24iIC0tPiBQb29sCiAgICBQb29sIC0tPiBTYW5kYm94CiAgICBTYW5kYm94IC0tPiBBZ2VudAogICAgU2FuZGJveCAtLT4gVml0ZQogICAgQWdlbnQgLS0gInNwYXducyIgLS0-IE9wZW5jb2RlCiAgICBPcGVuY29kZSAtLSAiZWRpdHMgZmlsZXMiIC0tPiBXb3Jrc3BhY2UKICAgIFdvcmtzcGFjZSAtLT4gVml0ZQogICAgVml0ZSAtLSAicHJldmlldyBVUkwgKi5tb2RhbC5ob3N0IiAtLT4gQnJvd3NlcgogICAgQWdlbnQgLS0gImdpdCBjb21taXQiIC0tPiBXb3Jrc3BhY2UKICAgIEFQSSAtLSAic25hcHNob3RfZmlsZXN5c3RlbSgpIiAtLT4gU25hcHNob3QKICAgIFNuYXBzaG90IC0tICJyZXN0b3JlIG9uIHByb2plY3Qgb3BlbiIgLS0-IFNhbmRib3gKICAgIEFnZW50IC0tICJ2aXRlIGJ1aWxkICsgbmV0bGlmeSBkZXBsb3kiIC0tPiBOZXRsaWZ5)
+
+The browser sends prompts with a Clerk JWT to a Modal-hosted FastAPI backend. FastAPI claims a pre-warmed sandbox from the pool, forwards the prompt to `agent-server.js` inside the VM, and streams SSE progress back. The agent drives opencode-ai to edit files in `/workspace`; Vite picks up the changes and serves a live preview via a Modal-tunnelled URL that renders directly in the browser iframe. On session end, FastAPI snapshots the full VM filesystem so the project can be restored exactly on next open.
+
+## The Sandbox
+
+Each user gets their own ephemeral Debian slim container with Node 20, opencode-ai, and Netlify CLI pre-installed. Two ports are tunnelled via Modal's encrypted URLs and exposed to the browser:
+
+| Port | Process | Role |
+|------|---------|------|
+| 3001 | `agent-server.js` (Express) | Control plane that receives prompts, drives the coding agent, and handles git checkpoints and deploys |
+| 5173 | Vite dev server | Live preview that hot-reloads as the agent edits files |
+
+**Directory layout inside the VM:**
+
+```
+/app/                       # agent-server.js + its node_modules
+/opt/starter/               # starter template (read-only, source of truth)
+/workspace/                 # live project — agent edits files here
+    ├── src/
+    ├── package.json
+    └── node_modules/       # pre-installed at image build time
+```
+
+**Lifecycle:**
+- On **first use**, `/opt/starter` is copied into `/workspace` and the Vite dev server starts
+- On **project reopen**, the VM is restored from a Modal filesystem snapshot (`snapshot_filesystem()`)
+- After **15 minutes of inactivity**, the sandbox is terminated and released back to the pool
+- A **warm pool** of 2 pre-warmed VMs is maintained via a Modal Queue and a scheduled function that tops it up every 5 minutes, so new projects start with zero cold starts
+
+## Starter Template
+
+Every project begins from the same minimal React template baked into the sandbox image. The agent edits files in place and never scaffolds from scratch.
+
+```
+/workspace/
+├── index.html
+├── vite.config.ts          # @ → src/ alias, port 5173
+├── package.json
+└── src/
+    ├── App.tsx             # top-level shell
+    ├── main.tsx            # entry point + error boundary
+    ├── index.css           # design token system
+    └── lib/utils.ts        # cn() utility
+```
+
+**Pre-installed packages:**
+
+| Package | Purpose |
+|---------|---------|
+| `react` 19 + `react-dom` | Core |
+| `tailwindcss` v4 | Styling |
+| `lucide-react` | Icons |
+| `clsx` + `tailwind-merge` | Conditional classes via `cn()` |
+
+**Design system (Deep Amber)** is a monochromatic light-first token set built on a single warm hue (`oklch H=65`). Background, cards, borders, muted text, and primary all share the same hue at different lightness levels. The agent is instructed to use only these tokens and never reach for raw hex values or arbitrary Tailwind palette utilities, so every generated app looks cohesive without extra prompting.
+
+## Stack
+
+| Layer | Tech |
+|-------|------|
+| Frontend | React 19, Redux Toolkit, Tailwind CSS v4, Clerk |
+| Backend | FastAPI, Python 3.12, Modal |
+| Sandbox | Debian slim, Node 20, opencode-ai, Netlify CLI |
+| Starter template | React 19 + Vite 6 + Tailwind CSS v4 + lucide-react |
+| Auth | Clerk (JWT validated server-side via JWKS) |
+| Persistence | Modal image snapshots (`snapshot_filesystem`) |
+| Deploy target | Netlify (one site per project) |
+
+## Technical Highlights
+
+- A **warm pool** of pre-warmed VMs sits in a Modal Queue at all times. New projects claim from the pool instantly while a scheduled function continuously refills it, eliminating cold starts entirely.
+- The **starter template acts as a taste-setter** for the agent's output. The design token system and pre-wired component structure set the quality floor for everything the agent generates, so the output looks polished without extra prompting.
+- **Agent rules** make a significant difference in reliability. Explicit instructions passed to opencode-ai (no raw hex, no arbitrary utilities, always use `cn()`, etc.) reduce build and compilation errors compared to letting the agent decide styling conventions on its own.

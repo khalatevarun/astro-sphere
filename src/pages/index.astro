@@ -21,10 +21,13 @@ const posts = featuredSlugs
   .map((slug) => allPosts.find((post) => post.slug === slug))
   .filter((post): post is NonNullable<typeof post> => Boolean(post));
 
-const projects = (await getCollection("projects"))
-  .filter((p) => !p.data.draft)
-  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
-  .slice(0, 3);
+const featuredProjectSlugs = ["buildman", "react-filejump", "base"];
+const allProjects = (await getCollection("projects")).filter(
+  (p) => !p.data.draft,
+);
+const projects = featuredProjectSlugs
+  .map((slug) => allProjects.find((p) => p.slug === slug))
+  .filter((p): p is NonNullable<typeof p> => Boolean(p));
 
 const githubSocial = SOCIALS.find((s) => s.NAME === "Github");
 const githubUsername = githubSocial?.TEXT ?? "khalatevarun";
