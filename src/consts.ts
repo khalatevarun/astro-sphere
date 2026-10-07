@@ -107,7 +107,6 @@ export const SOCIALS: Socials = [
     NAME: "X",
     ICON: "twitter-x",
     TEXT: "varunhnk",
-    HREF: "https://twitter.com/markhorn_dev",
+    HREF: "https://x.com/varunhnk",
   },
 ]
-
